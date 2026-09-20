@@ -1,0 +1,73 @@
+{
+  "name": "html-playhub",
+  "productName": "HTML Playhub",
+  "version": "1.0.0",
+  "description": "A Steam-style offline library and launcher for HTML/web games.",
+  "author": "HTML Playhub Contributors",
+  "license": "MIT",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "node --test tests/test-*.js",
+    "test:audit": "node tools/audit-games.mjs",
+    "fetch:games": "node tools/fetch-games.mjs",
+    "catalog": "node tools/build-catalog.mjs",
+    "icon": "node tools/make-icon.mjs",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "adm-zip": "0.6.1"
+  },
+  "devDependencies": {
+    "electron": "44.4.3",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "fun.htmlplayhub.app",
+    "productName": "HTML Playhub",
+    "copyright": "Copyright \u00a9 2026 HTML Playhub Contributors",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "bundled-games/**/*",
+      "catalog/**/*",
+      "package.json",
+      "LICENSE",
+      "!**/*.map"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": [
+        "nsis",
+        "portable",
+        "zip"
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HTML Playhub",
+      "artifactName": "${productName}-${version}-Setup.${ext}",
+      "fileAssociations": [
+        {
+          "ext": "html",
+          "name": "HTML Game",
+          "description": "Import into HTML Playhub"
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-Portable.${ext}"
+    }
+  }
+}

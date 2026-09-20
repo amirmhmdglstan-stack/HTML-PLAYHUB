@@ -1,0 +1,46 @@
+{
+  "manifestVersion": 1,
+  "id": "90s-puzzle-match",
+  "title": "PUZZLE MATCH",
+  "description": "",
+  "author": "prateek121",
+  "source": {
+    "repo": "https://github.com/prateek121/90s-games.git",
+    "homepage": "https://github.com/prateek121/90s-games",
+    "path": "games/puzzle-match.html"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "90s-games-LICENSE.txt"
+  },
+  "version": "1.0",
+  "genres": [
+    "Puzzle"
+  ],
+  "tags": [],
+  "language": "en",
+  "entryFile": "game.html",
+  "singleFile": true,
+  "qualityTier": null,
+  "sourceCollection": "90s Games",
+  "controls": {
+    "keyboard": false,
+    "mouse": true,
+    "touch": false,
+    "gamepad": false,
+    "notes": "Browser storage detected (localStorage) — saves persist per game."
+  },
+  "requirements": {
+    "keyboard": false,
+    "mouse": false,
+    "landscape": false
+  },
+  "network": {
+    "required": false,
+    "hosts": [],
+    "trackers": []
+  },
+  "bundleVersion": 1,
+  "addedAt": "2026-09-20T11:34:54.374Z",
+  "updatedAt": "2026-09-20T11:34:54.374Z"
+}

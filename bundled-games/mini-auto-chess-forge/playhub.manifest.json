@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "id": "mini-auto-chess-forge",
+  "title": "符文自走棋：群星赛季",
+  "description": "",
+  "author": "wangzifan396-wzf",
+  "source": {
+    "repo": "https://github.com/wangzifan396-wzf/mini-browser-games.git",
+    "homepage": "https://github.com/wangzifan396-wzf/mini-browser-games",
+    "path": "auto-chess-forge.html"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "mini-browser-games-LICENSE.txt"
+  },
+  "version": "1.0",
+  "genres": [
+    "Strategy"
+  ],
+  "tags": [
+    "Auto Chess Forge"
+  ],
+  "language": "zh-CN",
+  "entryFile": "game.html",
+  "singleFile": true,
+  "qualityTier": "S",
+  "sourceCollection": "Mini Browser Games",
+  "controls": {
+    "keyboard": false,
+    "mouse": true,
+    "touch": false,
+    "gamepad": false,
+    "notes": "Browser storage detected (localStorage) — saves persist per game."
+  },
+  "requirements": {
+    "keyboard": false,
+    "mouse": false,
+    "landscape": false
+  },
+  "network": {
+    "required": false,
+    "hosts": [],
+    "trackers": []
+  },
+  "bundleVersion": 1,
+  "addedAt": "2026-09-20T11:34:54.409Z",
+  "updatedAt": "2026-09-20T11:34:54.409Z"
+}

@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "id": "mini-starforge-idle",
+  "title": "星炉工坊",
+  "description": "",
+  "author": "wangzifan396-wzf",
+  "source": {
+    "repo": "https://github.com/wangzifan396-wzf/mini-browser-games.git",
+    "homepage": "https://github.com/wangzifan396-wzf/mini-browser-games",
+    "path": "starforge-idle.html"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "mini-browser-games-LICENSE.txt"
+  },
+  "version": "1.0",
+  "genres": [
+    "Strategy"
+  ],
+  "tags": [
+    "Starforge Idle"
+  ],
+  "language": "zh-CN",
+  "entryFile": "game.html",
+  "singleFile": true,
+  "qualityTier": "SSS",
+  "sourceCollection": "Mini Browser Games",
+  "controls": {
+    "keyboard": false,
+    "mouse": true,
+    "touch": true,
+    "gamepad": false,
+    "notes": "Browser storage detected (localStorage) — saves persist per game."
+  },
+  "requirements": {
+    "keyboard": false,
+    "mouse": false,
+    "landscape": false
+  },
+  "network": {
+    "required": false,
+    "hosts": [],
+    "trackers": []
+  },
+  "bundleVersion": 1,
+  "addedAt": "2026-09-20T11:34:54.592Z",
+  "updatedAt": "2026-09-20T11:34:54.592Z"
+}

@@ -1,0 +1,44 @@
+{
+  "manifestVersion": 1,
+  "id": "90s-solar-flare",
+  "title": "SOLAR FLARE",
+  "description": "",
+  "author": "prateek121",
+  "source": {
+    "repo": "https://github.com/prateek121/90s-games.git",
+    "homepage": "https://github.com/prateek121/90s-games",
+    "path": "games/solar-flare.html"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "90s-games-LICENSE.txt"
+  },
+  "version": "1.0",
+  "genres": [],
+  "tags": [],
+  "language": "en",
+  "entryFile": "game.html",
+  "singleFile": true,
+  "qualityTier": null,
+  "sourceCollection": "90s Games",
+  "controls": {
+    "keyboard": true,
+    "mouse": true,
+    "touch": false,
+    "gamepad": false,
+    "notes": "Browser storage detected (localStorage) — saves persist per game."
+  },
+  "requirements": {
+    "keyboard": false,
+    "mouse": false,
+    "landscape": false
+  },
+  "network": {
+    "required": false,
+    "hosts": [],
+    "trackers": []
+  },
+  "bundleVersion": 1,
+  "addedAt": "2026-09-20T11:34:54.384Z",
+  "updatedAt": "2026-09-20T11:34:54.384Z"
+}

@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "id": "mini-glyph-warden",
+  "title": "字灵守门：十二卷声韵战线",
+  "description": "十二卷固定拼音输入防守战役，三名守卷人、四类字灵、触屏键盘、三星与跨设备档案。",
+  "author": "wangzifan396-wzf",
+  "source": {
+    "repo": "https://github.com/wangzifan396-wzf/mini-browser-games.git",
+    "homepage": "https://github.com/wangzifan396-wzf/mini-browser-games",
+    "path": "glyph-warden.html"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "mini-browser-games-LICENSE.txt"
+  },
+  "version": "1.0",
+  "genres": [
+    "Action"
+  ],
+  "tags": [
+    "Glyph Warden"
+  ],
+  "language": "zh-CN",
+  "entryFile": "game.html",
+  "singleFile": true,
+  "qualityTier": "A",
+  "sourceCollection": "Mini Browser Games",
+  "controls": {
+    "keyboard": true,
+    "mouse": true,
+    "touch": true,
+    "gamepad": false,
+    "notes": "Browser storage detected (localStorage) — saves persist per game."
+  },
+  "requirements": {
+    "keyboard": false,
+    "mouse": false,
+    "landscape": false
+  },
+  "network": {
+    "required": false,
+    "hosts": [],
+    "trackers": []
+  },
+  "bundleVersion": 1,
+  "addedAt": "2026-09-20T11:34:54.487Z",
+  "updatedAt": "2026-09-20T11:34:54.487Z"
+}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="violet">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' playhub-app:; img-src 'self' playhub-app: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' playhub-app:;">
+<title>Play — HTML Playhub</title>
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+<div id="player">
+  <header id="toolbar">
+    <button id="t-exit" class="tbtn" title="Exit to library">✕ Exit</button>
+    <div id="t-title" class="t-title">Loading…</div>
+    <div class="t-group">
+      <button id="t-zoom-out" class="tbtn sm" title="Zoom out">−</button>
+      <button id="t-zoom-label" class="tbtn sm wide" title="Reset zoom">100%</button>
+      <button id="t-zoom-in" class="tbtn sm" title="Zoom in">＋</button>
+    </div>
+    <div class="t-group">
+      <button id="t-controls" class="tbtn sm" title="Virtual controls (F9)">🎮</button>
+      <button id="t-edit" class="tbtn sm" title="Edit control layout">✎</button>
+      <button id="t-shot" class="tbtn sm" title="Screenshot (F12)">📸</button>
+      <button id="t-reload" class="tbtn sm" title="Reload game (F5)">↻</button>
+      <button id="t-info" class="tbtn sm" title="Game info & gamepad test">ℹ</button>
+      <button id="t-full" class="tbtn sm" title="Fullscreen (F11)">⛶</button>
+    </div>
+  </header>
+  <div id="fs-bar" hidden>
+    <button id="fs-exit" class="tbtn sm" title="Exit fullscreen (F11)">⛶ Exit</button>
+    <button id="fs-shot" class="tbtn sm" title="Screenshot (F12)">📸</button>
+    <button id="fs-reload" class="tbtn sm" title="Reload (F5)">↻</button>
+    <button id="fs-controls" class="tbtn sm" title="Virtual controls (F9)">🎮</button>
+  </div>
+  <div id="stage-wrap">
+    <div id="frame">
+      <div id="guest-holder"></div>
+      <div id="overlay" hidden></div>
+      <div id="veil" class="veil">
+        <div class="veil-card"><div class="spinner"></div><h2 id="veil-title">Loading game…</h2><p id="veil-sub" class="muted"></p></div>
+      </div>
+      <div id="fail-veil" class="veil" hidden>
+        <div class="veil-card">
+          <div class="big">💥</div>
+          <h2>This game could not be loaded.</h2>
+          <p id="fail-msg" class="muted"></p>
+          <div class="veil-actions">
+            <button id="fail-reload" class="btn primary">↻ Reload</button>
+            <button id="fail-exit" class="btn">✕ Exit</button>
+            <button id="fail-doctor" class="btn">🩺 Game Doctor</button>
+            <button id="fail-tech" class="btn ghost">Technical details</button>
+          </div>
+          <pre id="fail-details" class="code" hidden></pre>
+          <div id="fail-doctor-out"></div>
+        </div>
+      </div>
+    </div>
+    <aside id="editor" hidden>
+      <h3>Control layout</h3>
+      <div id="editor-body"></div>
+      <div class="editor-actions">
+        <button id="ed-add-btn" class="btn sm">＋ Button</button>
+        <button id="ed-add-joy" class="btn sm">＋ Joystick</button>
+        <button id="ed-add-pad" class="btn sm">＋ Touchpad</button>
+      </div>
+      <div class="editor-actions">
+        <button id="ed-save" class="btn sm primary">💾 Save for this game</button>
+        <button id="ed-preset-save" class="btn sm">Save as preset</button>
+      </div>
+      <div class="editor-actions">
+        <select id="ed-preset-load" aria-label="Load preset"></select>
+        <button id="ed-reset" class="btn sm">Reset</button>
+        <button id="ed-done" class="btn sm primary">Done</button>
+      </div>
+    </aside>
+    <aside id="drawer" hidden>
+      <div class="drawer-head"><h3 id="drawer-title">Info</h3><button id="drawer-close" class="tbtn sm">✕</button></div>
+      <div id="drawer-body"></div>
+    </aside>
+  </div>
+  <div id="toast-root"></div>
+</div>
+<script type="module" src="js/game.js"></script>
+</body>
+</html>

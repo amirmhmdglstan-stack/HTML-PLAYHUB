@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="violet">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' playhub-app:; img-src 'self' playhub-app: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' playhub-app:; font-src 'self' data:;">
+<title>HTML Playhub</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar" aria-label="Primary navigation">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="8" class="bm-bg"/><rect x="6" y="6" width="20" height="14" rx="3" class="bm-screen"/><path d="M13 10.5v5l4.5-2.5z" class="bm-play"/><circle cx="12" cy="24.5" r="1.6" class="bm-d1"/><circle cx="20" cy="24.5" r="1.6" class="bm-d2"/></svg></span>
+      <span class="brand-text"><strong>HTML Playhub</strong><small>offline game library</small></span>
+    </div>
+    <nav id="nav" aria-label="Sections"></nav>
+    <div class="side-section">
+      <div class="side-section-title">Collections</div>
+      <div id="side-collections"></div>
+    </div>
+    <div class="side-footer">
+      <div id="side-stats" class="side-stats"></div>
+      <div id="update-dot" class="update-dot" hidden></div>
+    </div>
+  </aside>
+  <div id="main">
+    <header id="topbar">
+      <div class="topbar-left">
+        <button id="btn-back" class="icon-btn" title="Back" aria-label="Back" disabled>←</button>
+        <button id="btn-fwd" class="icon-btn" title="Forward" aria-label="Forward" disabled>→</button>
+        <div class="search-wrap">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input id="search" type="search" placeholder="Search games, authors, genres…  ( / )" aria-label="Search library" autocomplete="off">
+          <button id="search-clear" class="icon-btn sm" title="Clear search" hidden>✕</button>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button id="btn-surprise" class="btn ghost" title="Play a random game (Ctrl+R)">🎲 Surprise Me</button>
+        <button id="btn-import-top" class="btn primary" title="Import a game (Ctrl+O)">＋ Import</button>
+        <button id="btn-theme" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">◐</button>
+      </div>
+    </header>
+    <div id="filterbar" hidden></div>
+    <main id="view" tabindex="-1" aria-live="polite"></main>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root" aria-live="polite"></div>
+<div id="drop-overlay" hidden><div class="drop-card"><div class="drop-icon">＋</div><h2>Drop to import</h2><p>HTML files, folders or ZIP archives</p></div></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

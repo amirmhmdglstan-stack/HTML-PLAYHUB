@@ -1,0 +1,48 @@
+{
+  "manifestVersion": 1,
+  "id": "mini-crossword-cafe",
+  "title": "十字词咖啡：十二桌主题词盘",
+  "description": "四辑十二张固定主题英文词盘，确定性布局、横纵焦点、查错提示、触屏键盘、三星与跨设备档案。",
+  "author": "wangzifan396-wzf",
+  "source": {
+    "repo": "https://github.com/wangzifan396-wzf/mini-browser-games.git",
+    "homepage": "https://github.com/wangzifan396-wzf/mini-browser-games",
+    "path": "crossword-cafe.html"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "mini-browser-games-LICENSE.txt"
+  },
+  "version": "1.0",
+  "genres": [
+    "Educational"
+  ],
+  "tags": [
+    "Crossword Cafe"
+  ],
+  "language": "zh-CN",
+  "entryFile": "game.html",
+  "singleFile": true,
+  "qualityTier": "A",
+  "sourceCollection": "Mini Browser Games",
+  "controls": {
+    "keyboard": true,
+    "mouse": true,
+    "touch": false,
+    "gamepad": false,
+    "notes": "Browser storage detected (localStorage) — saves persist per game."
+  },
+  "requirements": {
+    "keyboard": false,
+    "mouse": false,
+    "landscape": false
+  },
+  "network": {
+    "required": false,
+    "hosts": [],
+    "trackers": []
+  },
+  "bundleVersion": 1,
+  "addedAt": "2026-09-20T11:34:54.453Z",
+  "updatedAt": "2026-09-20T11:34:54.453Z"
+}

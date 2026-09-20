@@ -1,0 +1,22 @@
+node_modules/
+release/
+out/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local dev data (portable-mode data dir when running from source)
+/data/
+/tmp/
+/playhub-dev-data/
+
+# Downloaded game sources used by tools (not committed; committed bundle lives in bundled-games/)
+.tools-cache/
+
+# OS / editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo

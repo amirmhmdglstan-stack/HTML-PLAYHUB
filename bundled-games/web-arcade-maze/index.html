@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Maze — Don't Look Back</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #000; color: #c8b89a;
+      font-family: 'Courier New', monospace;
+    }
+    canvas { display: block; }
+    .panel {
+      position: fixed;
+      background: rgba(8, 4, 4, 0.78);
+      border: 1px solid rgba(160, 120, 100, 0.35);
+      padding: 8px 12px;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      z-index: 10;
+      user-select: none;
+      backdrop-filter: blur(2px);
+    }
+    #hud { top: 12px; left: 12px; line-height: 1.7; }
+    #hud .key {
+      display: inline-block;
+      background: rgba(160, 120, 100, 0.15);
+      border: 1px solid rgba(160, 120, 100, 0.4);
+      padding: 1px 6px;
+      border-radius: 2px;
+      margin: 0 1px;
+      font-weight: bold;
+      color: #d8b89a;
+    }
+    #stats { top: 12px; right: 12px; min-width: 130px; }
+    #stamina-wrap {
+      position: fixed; bottom: 12px; left: 12px;
+      background: rgba(8, 4, 4, 0.78);
+      border: 1px solid rgba(160, 120, 100, 0.35);
+      padding: 6px 10px;
+      width: 200px;
+      z-index: 10;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    #stamina-bar {
+      width: 100%; height: 6px;
+      background: rgba(60, 30, 30, 0.6);
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    #stamina-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #b85040, #f0a070);
+      transition: width 0.1s linear;
+      width: 100%;
+    }
+    #threat {
+      position: fixed; bottom: 12px; right: 12px;
+      background: rgba(8, 4, 4, 0.78);
+      border: 1px solid rgba(160, 120, 100, 0.35);
+      padding: 8px 12px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      z-index: 10;
+      color: #c8b89a;
+    }
+    #threat.danger { color: #ff5544; border-color: #ff5544; animation: dangerflash 1s ease-in-out infinite; }
+    @keyframes dangerflash {
+      0%, 100% { box-shadow: 0 0 0 rgba(255,85,68,0); }
+      50% { box-shadow: 0 0 14px rgba(255,85,68,0.6); }
+    }
+    #compass {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      font-size: 16px; opacity: 0.5; letter-spacing: 8px;
+      z-index: 10; user-select: none;
+      text-shadow: 0 0 8px rgba(0,0,0,0.9);
+    }
+    .crosshair {
+      position: fixed; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 4px; height: 4px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      z-index: 5; pointer-events: none;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+    }
+    #red-vignette {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 6;
+      opacity: 0;
+      background: radial-gradient(circle at center,
+        rgba(120, 0, 0, 0) 30%,
+        rgba(140, 0, 0, 0.25) 60%,
+        rgba(180, 0, 0, 0.85) 100%);
+      transition: opacity 0.2s;
+    }
+    #grain {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 7;
+      opacity: 0.07;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.8'/></svg>");
+      mix-blend-mode: overlay;
+    }
+    #scanlines {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 8;
+      opacity: 0.07;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,0,0,0.4),
+        rgba(0,0,0,0.4) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    }
+    body.jumpscare-active canvas {
+      animation: jsViolentShake 0.42s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite alternate;
+      filter: saturate(2.4) contrast(1.55) brightness(1.4) hue-rotate(-12deg);
+    }
+    body.jumpscare-active #red-vignette {
+      opacity: 1 !important;
+      animation: jsVignettePulse 0.18s linear infinite alternate;
+    }
+    body.jumpscare-active #grain {
+      opacity: 0.55 !important;
+      animation: jsGrainBurst 0.08s steps(2, end) infinite;
+    }
+    body.jumpscare-active #scanlines { opacity: 0.32 !important; }
+    body.jumpscare-active::before {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 140;
+      background:
+        radial-gradient(ellipse at 22% 38%, rgba(120, 4, 4, 0.0) 0%, rgba(120, 4, 4, 0.0) 22%, rgba(140, 0, 0, 0.7) 70%, rgba(60, 0, 0, 0.95) 100%),
+        radial-gradient(circle at 70% 60%, rgba(80, 0, 0, 0.3) 0%, transparent 40%);
+      mix-blend-mode: multiply;
+      animation: jsBloodShift 0.15s steps(3) infinite;
+    }
+    body.jumpscare-active::after {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 141;
+      background:
+        radial-gradient(circle at 28% 30%, rgba(180, 0, 0, 0.45) 0%, transparent 14%),
+        radial-gradient(circle at 64% 45%, rgba(160, 0, 0, 0.4) 0%, transparent 11%),
+        radial-gradient(circle at 80% 70%, rgba(140, 0, 0, 0.5) 0%, transparent 18%),
+        radial-gradient(circle at 12% 78%, rgba(180, 10, 10, 0.55) 0%, transparent 12%);
+      mix-blend-mode: multiply;
+    }
+    @keyframes jsViolentShake {
+      0%   { transform: translate(-14px, 6px) skew(-2deg, 1deg) scale(1.02); }
+      18%  { transform: translate(12px, -10px) skew(3deg, -2deg) scale(1.05); }
+      36%  { transform: translate(-9px, 8px) skew(-1deg, 2deg) scale(1.03); }
+      54%  { transform: translate(16px, -4px) skew(2deg, -1deg) scale(1.04); }
+      72%  { transform: translate(-6px, 12px) skew(-3deg, 1deg) scale(1.06); }
+      100% { transform: translate(10px, -8px) skew(1deg, -2deg) scale(1.03); }
+    }
+    @keyframes jsVignettePulse {
+      0%   { transform: scale(1.0); filter: brightness(1.0); }
+      100% { transform: scale(1.08); filter: brightness(1.4); }
+    }
+    @keyframes jsGrainBurst {
+      0%   { transform: translate(0, 0); }
+      50%  { transform: translate(2px, -3px); }
+      100% { transform: translate(-3px, 2px); }
+    }
+    @keyframes jsBloodShift {
+      0%   { transform: translate(0, 0) scale(1.0); opacity: 0.85; }
+      33%  { transform: translate(-4px, 2px) scale(1.04); opacity: 0.95; }
+      66%  { transform: translate(3px, -2px) scale(1.06); opacity: 0.78; }
+      100% { transform: translate(-1px, 1px) scale(1.0); opacity: 0.9; }
+    }
+    #overlay {
+      position: fixed; inset: 0;
+      background: radial-gradient(circle at center, rgba(15, 4, 4, 0.94) 0%, rgba(0, 0, 0, 0.99) 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 100; text-align: center;
+      transition: opacity 0.3s;
+    }
+    #overlay.hidden { opacity: 0; pointer-events: none; }
+    #overlay h1 {
+      font-size: 56px;
+      margin-bottom: 24px;
+      letter-spacing: 12px;
+      color: #b85040;
+      text-shadow: 0 0 28px rgba(184, 80, 64, 0.6);
+    }
+    #overlay.death h1 {
+      color: #ff2020;
+      text-shadow: 0 0 36px rgba(255, 30, 30, 0.85);
+      animation: deathPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes deathPulse {
+      0%, 100% { opacity: 0.85; letter-spacing: 12px; }
+      50% { opacity: 1; letter-spacing: 14px; }
+    }
+    #overlay p { margin: 6px 0; font-size: 15px; opacity: 0.85; max-width: 560px; line-height: 1.6; }
+    #overlay .lore { font-style: italic; opacity: 0.6; margin: 14px 0; max-width: 520px; }
+    #overlay button {
+      margin-top: 32px;
+      padding: 14px 44px;
+      background: linear-gradient(180deg, #6a1818 0%, #3a0808 100%);
+      color: #f3e0d2;
+      border: 1px solid #c84040;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 5px;
+      transition: all 0.15s;
+    }
+    #overlay button:hover {
+      background: linear-gradient(180deg, #8a2020 0%, #4a0a0a 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(200, 64, 64, 0.4);
+    }
+    #overlay button:active { transform: translateY(0); }
+    #loading {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      background: #000; color: #b85040; font-size: 14px;
+      letter-spacing: 4px; z-index: 200;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">SOMETHING IS WAITING…</div>
+
+  <div id="hud" class="panel">
+    <div><span class="key">W A S D</span> Move &nbsp; <span class="key">Mouse</span> Look</div>
+    <div><span class="key">Shift</span> Sprint (noisy!) &nbsp; <span class="key">N</span> New Maze &nbsp; <span class="key">T</span> Spawn in front (test) &nbsp; <span class="key">Esc</span> Pause</div>
+  </div>
+
+  <div id="stats" class="panel">Time: 0.0s</div>
+
+  <div id="stamina-wrap">
+    STAMINA
+    <div id="stamina-bar"><div id="stamina-fill"></div></div>
+  </div>
+
+  <div id="threat">SILENT</div>
+  <div id="compass">N</div>
+  <div class="crosshair"></div>
+
+  <div id="red-vignette"></div>
+  <div id="grain"></div>
+  <div id="scanlines"></div>
+
+  <div id="overlay" class="hidden">
+    <h1>THE MAZE</h1>
+    <p>Something else is in here with you.</p>
+    <p class="lore">"It moves when you move. It listens. Don't run unless you must."</p>
+    <p>Reach the green beacon to escape. WASD + mouse. ESC to pause.</p>
+    <button id="action-btn">ENTER</button>
+  </div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const MAZE_W = 16;
+const MAZE_H = 16;
+const CELL = 4;
+const WALL_H = 4;
+const WT = 0.4;
+const PLAYER_R = 0.38;
+const EYE = 1.7;
+const SPEED_WALK = 4.2;
+const SPEED_RUN = 7.5;
+const MOUSE_SENS = 0.0024;
+
+const MONSTER_SPEED_IDLE = 1.0;
+const MONSTER_SPEED_STALK = 1.7;
+const MONSTER_SPEED_HUNT = 2.9;
+const MONSTER_HEAR_RADIUS = 9;
+const MONSTER_SIGHT_RADIUS = 6;
+const MONSTER_CATCH_DIST = 0.95;
+const MONSTER_REPATH_INTERVAL = 0.4;
+
+const STAMINA_MAX = 4.0;
+const STAMINA_REGEN = 0.45;
+const STAMINA_DRAIN = 1.0;
+
+/* ============================================================
+   MAZE GENERATION
+   ============================================================ */
+function generateMaze(w, h) {
+  const g = [];
+  for (let y = 0; y < h; y++) {
+    const row = [];
+    for (let x = 0; x < w; x++) {
+      row.push({ x, y, visited: false, N: true, S: true, E: true, W: true });
+    }
+    g.push(row);
+  }
+  const stack = [g[0][0]];
+  g[0][0].visited = true;
+  while (stack.length) {
+    const c = stack[stack.length - 1];
+    const nbs = [];
+    if (c.y > 0     && !g[c.y - 1][c.x].visited) nbs.push(['N', g[c.y - 1][c.x], 'S']);
+    if (c.y < h - 1 && !g[c.y + 1][c.x].visited) nbs.push(['S', g[c.y + 1][c.x], 'N']);
+    if (c.x < w - 1 && !g[c.y][c.x + 1].visited) nbs.push(['E', g[c.y][c.x + 1], 'W']);
+    if (c.x > 0     && !g[c.y][c.x - 1].visited) nbs.push(['W', g[c.y][c.x - 1], 'E']);
+    if (!nbs.length) { stack.pop(); continue; }
+    const [dir, next, opp] = nbs[(Math.random() * nbs.length) | 0];
+    c[dir] = false;
+    next[opp] = false;
+    next.visited = true;
+    stack.push(next);
+  }
+  return g;
+}
+
+function cellNeighbors(c) {
+  const out = [];
+  if (!c.N && c.y > 0)            out.push({ x: c.x,     y: c.y - 1 });
+  if (!c.S && c.y < MAZE_H - 1)   out.push({ x: c.x,     y: c.y + 1 });
+  if (!c.E && c.x < MAZE_W - 1)   out.push({ x: c.x + 1, y: c.y     });
+  if (!c.W && c.x > 0)            out.push({ x: c.x - 1, y: c.y     });
+  return out;
+}
+
+function bfsPath(from, to) {
+  if (from.x === to.x && from.y === to.y) return [];
+  const idx = (x, y) => y * MAZE_W + x;
+  const visited = new Uint8Array(MAZE_W * MAZE_H);
+  const parent = new Int16Array(MAZE_W * MAZE_H).fill(-1);
+  const queue = [from];
+  visited[idx(from.x, from.y)] = 1;
+  while (queue.length) {
+    const cur = queue.shift();
+    if (cur.x === to.x && cur.y === to.y) {
+      const path = [];
+      let node = cur;
+      while (!(node.x === from.x && node.y === from.y)) {
+        path.unshift(node);
+        const p = parent[idx(node.x, node.y)];
+        node = { x: p % MAZE_W, y: (p / MAZE_W) | 0 };
+      }
+      return path;
+    }
+    const nbs = cellNeighbors(maze[cur.y][cur.x]);
+    for (const n of nbs) {
+      if (!visited[idx(n.x, n.y)]) {
+        visited[idx(n.x, n.y)] = 1;
+        parent[idx(n.x, n.y)] = idx(cur.x, cur.y);
+        queue.push(n);
+      }
+    }
+  }
+  return null;
+}
+
+function cellDist(a, b) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+/* ============================================================
+   PROCEDURAL TEXTURES
+   ============================================================ */
+function makeBrickTexture() {
+  const s = 512, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.fillStyle = '#1a110a';
+  x.fillRect(0, 0, s, s);
+  const bh = s / 8, bw = s / 4;
+  for (let r = 0; r < 8; r++) {
+    const off = (r % 2) ? bw / 2 : 0;
+    for (let col = -1; col <= 4; col++) {
+      const px = col * bw + off + 4;
+      const py = r * bh + 4;
+      const baseR = 80 + (Math.random() * 50) | 0;
+      const baseG = 36 + (Math.random() * 24) | 0;
+      const baseB = 26 + (Math.random() * 18) | 0;
+      x.fillStyle = `rgb(${baseR},${baseG},${baseB})`;
+      x.fillRect(px, py, bw - 8, bh - 8);
+      for (let i = 0; i < 80; i++) {
+        x.fillStyle = `rgba(0,0,0,${Math.random() * 0.28})`;
+        x.fillRect(px + Math.random() * (bw - 8), py + Math.random() * (bh - 8), 2, 2);
+      }
+      if (Math.random() < 0.04) {
+        x.fillStyle = `rgba(120,10,10,${0.3 + Math.random() * 0.3})`;
+        x.fillRect(px + Math.random() * (bw - 12), py, 2, bh - 8);
+      }
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
+function makeFloorTexture() {
+  const s = 512, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const x = c.getContext('2d');
+  const tile = s / 4;
+  for (let yi = 0; yi < 4; yi++) {
+    for (let xi = 0; xi < 4; xi++) {
+      const dark = (xi + yi) % 2 === 0;
+      x.fillStyle = dark ? '#0e0a07' : '#332518';
+      x.fillRect(xi * tile, yi * tile, tile, tile);
+      for (let i = 0; i < 30; i++) {
+        const sx = xi * tile + Math.random() * tile;
+        const sy = yi * tile + Math.random() * tile;
+        x.strokeStyle = dark
+          ? `rgba(120,90,60,${Math.random() * 0.12})`
+          : `rgba(10,5,2,${Math.random() * 0.22})`;
+        x.lineWidth = 1;
+        x.beginPath();
+        x.moveTo(sx, sy);
+        x.lineTo(sx + (Math.random() - 0.5) * 80, sy + (Math.random() - 0.5) * 80);
+        x.stroke();
+      }
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
+function makeCeilingTexture() {
+  const s = 256, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.fillStyle = '#040208';
+  x.fillRect(0, 0, s, s);
+  for (let i = 0; i < 600; i++) {
+    x.fillStyle = `rgba(150,140,140,${Math.random() * 0.05})`;
+    x.fillRect(Math.random() * s, Math.random() * s, 1, 1);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+function makePictureTexture() {
+  const s = 256, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.fillStyle = '#2a1408';
+  x.fillRect(0, 0, s, s);
+  x.fillStyle = '#080404';
+  x.fillRect(18, 18, s - 36, s - 36);
+  for (let i = 0; i < 40; i++) {
+    const r = 60 + (Math.random() * 140) | 0;
+    const g = (Math.random() * 30) | 0;
+    const b = (Math.random() * 30) | 0;
+    x.fillStyle = `rgba(${r},${g},${b},${0.4 + Math.random() * 0.55})`;
+    x.beginPath();
+    x.arc(
+      32 + Math.random() * (s - 64),
+      32 + Math.random() * (s - 64),
+      6 + Math.random() * 30,
+      0, Math.PI * 2
+    );
+    x.fill();
+  }
+  x.strokeStyle = '#5a3018';
+  x.lineWidth = 3;
+  x.strokeRect(18, 18, s - 36, s - 36);
+  return new THREE.CanvasTexture(c);
+}
+
+/* ============================================================
+   AUDIO SYSTEM
+   ============================================================ */
+class AudioSystem {
+  constructor() {
+    this.ctx = null;
+    this.master = null;
+    this.musicGain = null;
+    this.sfxGain = null;
+    this.ambientGain = null;
+    this.ambientScheduler = null;
+  }
+  ensure() {
+    if (this.ctx) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.85;
+    const comp = this.ctx.createDynamicsCompressor();
+    comp.threshold.value = -8;
+    comp.knee.value = 6;
+    comp.ratio.value = 4;
+    comp.attack.value = 0.005;
+    comp.release.value = 0.25;
+    this.master.connect(comp).connect(this.ctx.destination);
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.gain.value = 0.6;
+    this.musicGain.connect(this.master);
+    this.sfxGain = this.ctx.createGain();
+    this.sfxGain.gain.value = 0.85;
+    this.sfxGain.connect(this.master);
+    this.ambientGain = this.ctx.createGain();
+    this.ambientGain.gain.value = 0.5;
+    this.ambientGain.connect(this.master);
+    this._scheduleAmbientEvents();
+  }
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+  _noiseBuffer(seconds, type) {
+    const len = (this.ctx.sampleRate * seconds) | 0;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    if (type === 'pink') {
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        b0 = 0.99765 * b0 + w * 0.099046;
+        b1 = 0.963 * b1 + w * 0.2965164;
+        b2 = 0.57 * b2 + w * 1.0526913;
+        d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.4;
+      }
+    } else {
+      let last = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        d[i] = (last + 0.02 * w) / 1.02;
+        last = d[i];
+        d[i] *= 3.5;
+      }
+    }
+    return buf;
+  }
+  _startMusic() {
+    const baseFreq = 55;
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = baseFreq;
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'triangle';
+    osc2.frequency.value = baseFreq * Math.pow(2, 1 / 12);
+    const osc3 = this.ctx.createOscillator();
+    osc3.type = 'sine';
+    osc3.frequency.value = baseFreq * 1.5;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 220;
+    filter.Q.value = 0.7;
+    const lfo = this.ctx.createOscillator();
+    lfo.frequency.value = 0.05;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 22;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc1.detune);
+    lfoGain.connect(osc2.detune);
+    const fLfo = this.ctx.createOscillator();
+    fLfo.frequency.value = 0.07;
+    const fLfoGain = this.ctx.createGain();
+    fLfoGain.gain.value = 60;
+    fLfo.connect(fLfoGain);
+    fLfoGain.connect(filter.frequency);
+    const droneGain = this.ctx.createGain();
+    droneGain.gain.value = 0.18;
+    osc1.connect(filter);
+    osc2.connect(filter);
+    osc3.connect(filter);
+    filter.connect(droneGain).connect(this.musicGain);
+    osc1.start();
+    osc2.start();
+    osc3.start();
+    lfo.start();
+    fLfo.start();
+    const choirBuf = this._noiseBuffer(8, 'pink');
+    const choirSrc = this.ctx.createBufferSource();
+    choirSrc.buffer = choirBuf;
+    choirSrc.loop = true;
+    const choirFilter = this.ctx.createBiquadFilter();
+    choirFilter.type = 'bandpass';
+    choirFilter.frequency.value = 600;
+    choirFilter.Q.value = 5;
+    const choirLfo = this.ctx.createOscillator();
+    choirLfo.frequency.value = 0.13;
+    const choirLfoGain = this.ctx.createGain();
+    choirLfoGain.gain.value = 400;
+    choirLfo.connect(choirLfoGain);
+    choirLfoGain.connect(choirFilter.frequency);
+    const choirGain = this.ctx.createGain();
+    choirGain.gain.value = 0.07;
+    choirSrc.connect(choirFilter).connect(choirGain).connect(this.musicGain);
+    choirSrc.start();
+    choirLfo.start();
+  }
+  _startAmbientBed() {
+    const buf = this._noiseBuffer(4, 'brown');
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = 90;
+    const g = this.ctx.createGain();
+    g.gain.value = 0.06;
+    src.connect(filt).connect(g).connect(this.ambientGain);
+    src.start();
+  }
+  _scheduleAmbientEvents() {
+    if (this.ambientScheduler) clearTimeout(this.ambientScheduler);
+    const fire = () => {
+      if (!this.ctx) return;
+      const choice = Math.random();
+      if (choice < 0.32) this.whisper();
+      else if (choice < 0.65) this.distantFootstep();
+      else if (choice < 0.85) this.creak();
+      else this.distantImpact();
+      this.ambientScheduler = setTimeout(fire, 7000 + Math.random() * 13000);
+    };
+    this.ambientScheduler = setTimeout(fire, 4000 + Math.random() * 5000);
+  }
+  whisper() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const duration = 1.4 + Math.random() * 1.4;
+    const len = (this.ctx.sampleRate * duration) | 0;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      const env = Math.sin((i / len) * Math.PI);
+      d[i] = (Math.random() * 2 - 1) * env;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 800 + Math.random() * 1400;
+    filter.Q.value = 9 + Math.random() * 4;
+    const formant = this.ctx.createOscillator();
+    formant.frequency.value = 3 + Math.random() * 4;
+    const formantGain = this.ctx.createGain();
+    formantGain.gain.value = 200 + Math.random() * 300;
+    formant.connect(formantGain).connect(filter.frequency);
+    const g = this.ctx.createGain();
+    g.gain.value = 0.07 + Math.random() * 0.06;
+    src.connect(filter).connect(g).connect(this.sfxGain);
+    src.start(t);
+    formant.start(t);
+    formant.stop(t + duration);
+  }
+  distantFootstep() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const count = 2 + ((Math.random() * 3) | 0);
+    for (let i = 0; i < count; i++) {
+      const delay = i * (0.4 + Math.random() * 0.2);
+      const len = (this.ctx.sampleRate * 0.16) | 0;
+      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < len; j++) d[j] = (Math.random() * 2 - 1) * (1 - j / len);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      const filt = this.ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = 400;
+      const g = this.ctx.createGain();
+      g.gain.value = (0.04 + Math.random() * 0.04) * (1 - i / (count + 1));
+      src.connect(filt).connect(g).connect(this.sfxGain);
+      src.start(t + delay);
+    }
+  }
+  creak() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const duration = 0.8 + Math.random() * 0.6;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sawtooth';
+    const startF = 80 + Math.random() * 40;
+    const endF = startF * (0.4 + Math.random() * 0.3);
+    osc.frequency.setValueAtTime(startF, t);
+    osc.frequency.exponentialRampToValueAtTime(endF, t + duration);
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 300;
+    filter.Q.value = 12;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.08, t + duration * 0.3);
+    g.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(filter).connect(g).connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + duration);
+  }
+  distantImpact() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(60, t);
+    osc.frequency.exponentialRampToValueAtTime(20, t + 0.4);
+    const og = this.ctx.createGain();
+    og.gain.setValueAtTime(0.15, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    osc.connect(og).connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.6);
+    const len = (this.ctx.sampleRate * 0.4) | 0;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = 200;
+    const g = this.ctx.createGain();
+    g.gain.value = 0.04;
+    src.connect(filt).connect(g).connect(this.sfxGain);
+    src.start(t);
+  }
+  wind() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const duration = 3 + Math.random() * 2;
+    const len = (this.ctx.sampleRate * duration) | 0;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      d[i] = (last + 0.04 * w) / 1.04;
+      last = d[i];
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 200;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.06, t + 0.5);
+    g.gain.linearRampToValueAtTime(0, t + duration);
+    src.connect(filter).connect(g).connect(this.sfxGain);
+    src.start(t);
+  }
+  beat(volume = 0.35) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(34, t + 0.12);
+    g.gain.setValueAtTime(volume, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    osc.connect(g).connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.25);
+  }
+  footstep(volume = 0.04) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const len = (this.ctx.sampleRate * 0.08) | 0;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = 700;
+    const g = this.ctx.createGain();
+    g.gain.value = volume;
+    src.connect(filt).connect(g).connect(this.sfxGain);
+    src.start(t);
+  }
+  setGrowl(_amt) { /* removed: was a positional giveaway */ }
+  monsterStep(_distance) { /* removed: was a positional giveaway */ }
+  glassShatter() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    for (const f of [3400, 4700, 6100, 7600, 9100]) {
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(f * (0.92 + Math.random() * 0.16), t);
+      osc.frequency.exponentialRampToValueAtTime(f * 0.55, t + 0.45);
+      g.gain.setValueAtTime(0.07, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.connect(g).connect(this.sfxGain);
+      osc.start(t);
+      osc.stop(t + 0.55);
+    }
+    const shardCount = 12;
+    for (let i = 0; i < shardCount; i++) {
+      const delay = Math.random() * 0.6;
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'triangle';
+      const start = 5000 + Math.random() * 4000;
+      osc.frequency.setValueAtTime(start, t + delay);
+      osc.frequency.exponentialRampToValueAtTime(start * 0.35, t + delay + 0.15);
+      g.gain.setValueAtTime(0.04, t + delay);
+      g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.2);
+      osc.connect(g).connect(this.sfxGain);
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.22);
+    }
+    const len = (this.ctx.sampleRate * 0.6) | 0;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * 0.25));
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = this.ctx.createBiquadFilter();
+    filt.type = 'highpass';
+    filt.frequency.value = 3500;
+    const ng = this.ctx.createGain();
+    ng.gain.value = 0.18;
+    src.connect(filt).connect(ng).connect(this.sfxGain);
+    src.start(t);
+  }
+  scream() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    if (this.musicGain) {
+      const m = this.musicGain.gain;
+      m.cancelScheduledValues(t);
+      m.setValueAtTime(m.value, t);
+      m.linearRampToValueAtTime(0, t + 0.06);
+      m.linearRampToValueAtTime(0.45, t + 2.5);
+    }
+    const sub = this.ctx.createOscillator();
+    const sg = this.ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(120, t + 0.05);
+    sub.frequency.exponentialRampToValueAtTime(28, t + 1.0);
+    sg.gain.setValueAtTime(0.78, t + 0.05);
+    sg.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    sub.connect(sg).connect(this.sfxGain);
+    sub.start(t + 0.05);
+    sub.stop(t + 1.5);
+    for (const f of [620, 880, 1240, 1750, 2480, 3500]) {
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(f * (0.85 + Math.random() * 0.3), t + 0.05);
+      osc.frequency.linearRampToValueAtTime(f * 0.35, t + 1.8);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.16, t + 0.1);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+      osc.connect(g).connect(this.sfxGain);
+      osc.start(t);
+      osc.stop(t + 1.9);
+    }
+    const len = (this.ctx.sampleRate * 1.5) | 0;
+    const noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const nd = noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) nd[i] = (Math.random() * 2 - 1) * (1 - Math.pow(i / len, 0.5));
+    const noiseSrc = this.ctx.createBufferSource();
+    noiseSrc.buffer = noiseBuf;
+    const noiseFilt = this.ctx.createBiquadFilter();
+    noiseFilt.type = 'highpass';
+    noiseFilt.frequency.value = 1500;
+    const noiseG = this.ctx.createGain();
+    noiseG.gain.value = 0.22;
+    noiseSrc.connect(noiseFilt).connect(noiseG).connect(this.sfxGain);
+    noiseSrc.start(t);
+    const swLen = (this.ctx.sampleRate * 0.4) | 0;
+    const swBuf = this.ctx.createBuffer(1, swLen, this.ctx.sampleRate);
+    const swD = swBuf.getChannelData(0);
+    for (let i = 0; i < swLen; i++) swD[i] = (Math.random() * 2 - 1) * (i / swLen);
+    const swSrc = this.ctx.createBufferSource();
+    swSrc.buffer = swBuf;
+    const swFilt = this.ctx.createBiquadFilter();
+    swFilt.type = 'bandpass';
+    swFilt.frequency.setValueAtTime(200, t);
+    swFilt.frequency.exponentialRampToValueAtTime(4000, t + 0.4);
+    swFilt.Q.value = 6;
+    const swG = this.ctx.createGain();
+    swG.gain.value = 0.4;
+    swSrc.connect(swFilt).connect(swG).connect(this.sfxGain);
+    swSrc.start(t);
+  }
+  win() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    for (const f of [523.25, 659.25, 783.99]) {
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      g.gain.setValueAtTime(0.1, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 2.4);
+      osc.connect(g).connect(this.sfxGain);
+      osc.start(t);
+      osc.stop(t + 2.5);
+    }
+  }
+}
+const audio = new AudioSystem();
+
+/* ============================================================
+   SCENE
+   ============================================================ */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020205);
+scene.fog = new THREE.Fog(0x020205, 2.5, 14);
+
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.05, 100);
+const yaw = new THREE.Object3D();
+const pitch = new THREE.Object3D();
+yaw.add(pitch);
+pitch.add(camera);
+scene.add(yaw);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0x0a0810, 0.7));
+
+const flashlight = new THREE.SpotLight(0xd8e0ff, 6.0, 16, Math.PI * 0.18, 0.55, 1.4);
+flashlight.position.set(0, 0, 0);
+flashlight.target.position.set(0, 0, -1);
+pitch.add(flashlight);
+pitch.add(flashlight.target);
+
+const playerGlow = new THREE.PointLight(0x4a4858, 0.7, 3.5, 2.0);
+yaw.add(playerGlow);
+
+const goalLight = new THREE.PointLight(0x80ffb0, 0, 20, 1.8);
+scene.add(goalLight);
+
+/* ============================================================
+   SHARED RESOURCES
+   ============================================================ */
+const wallTex = makeBrickTexture();
+const floorTex = makeFloorTexture();
+const ceilTex = makeCeilingTexture();
+const sharedWallGeo = new THREE.BoxGeometry(1, WALL_H, 1);
+const wallMat = new THREE.MeshStandardMaterial({
+  map: wallTex,
+  roughness: 0.95,
+  metalness: 0.05,
+});
+const floorMat = new THREE.MeshStandardMaterial({
+  map: floorTex.clone(),
+  roughness: 0.65,
+  metalness: 0.05,
+});
+floorMat.map.wrapS = floorMat.map.wrapT = THREE.RepeatWrapping;
+floorMat.map.repeat.set(MAZE_W, MAZE_H);
+const ceilMat = new THREE.MeshStandardMaterial({
+  map: ceilTex.clone(),
+  roughness: 1,
+  metalness: 0,
+});
+ceilMat.map.wrapS = ceilMat.map.wrapT = THREE.RepeatWrapping;
+ceilMat.map.repeat.set(MAZE_W, MAZE_H);
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let maze;
+let walls = [];
+let mazeGroup;
+let goalMesh;
+
+const NUM_MONSTERS = 1;
+const MONSTER_ROLES = ['stalker'];
+
+let monsters = [];
+
+let monster = null;
+let monsterMixer = null;
+
+function newMixerState() {
+  return {
+    state: 'wander',
+    role: 'stalker',
+    cell: { x: 0, y: 0 },
+    fromCell: { x: 0, y: 0 },
+    toCell: { x: 0, y: 0 },
+    progress: 1,
+    path: [],
+    pathTimer: 0,
+    stalkRepathTimer: 0,
+    stareHoldTimer: 0,
+    stareTime: 0,
+    forceHuntUntil: 0,
+    lastTeleport: 0,
+    ambushTarget: null,
+    ambushTimer: 0,
+  };
+}
+
+let startTime = performance.now();
+let wonTime = 0;
+let gameState = 'menu';
+let walkBob = 0;
+let pointerLocked = false;
+let stamina = STAMINA_MAX;
+let exhausted = false;
+let heartTimer = 0;
+let footstepDist = 0;
+
+/* ============================================================
+   BUILD MAZE
+   ============================================================ */
+function buildMaze() {
+  if (mazeGroup) {
+    scene.remove(mazeGroup);
+    mazeGroup.traverse((o) => {
+      if (o.isMesh) {
+        if (o.material && o.material.map &&
+            o.material !== wallMat && o.material !== floorMat && o.material !== ceilMat) {
+          o.material.map.dispose();
+          o.material.dispose();
+        }
+      }
+    });
+  }
+  mazeGroup = new THREE.Group();
+  scene.add(mazeGroup);
+
+  maze = generateMaze(MAZE_W, MAZE_H);
+  walls.length = 0;
+
+  const totalW = MAZE_W * CELL;
+  const totalH = MAZE_H * CELL;
+
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(totalW, totalH), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(totalW / 2, 0, totalH / 2);
+  mazeGroup.add(floor);
+
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(totalW, totalH), ceilMat);
+  ceil.rotation.x = Math.PI / 2;
+  ceil.position.set(totalW / 2, WALL_H, totalH / 2);
+  mazeGroup.add(ceil);
+
+  let pictureCount = 0;
+  const maxPictures = 10;
+
+  function addWall(x, z, w, d, allowPicture) {
+    const m = new THREE.Mesh(sharedWallGeo, wallMat);
+    m.position.set(x + w / 2, WALL_H / 2, z + d / 2);
+    m.scale.set(w, 1, d);
+    mazeGroup.add(m);
+    walls.push({
+      minX: x - PLAYER_R, maxX: x + w + PLAYER_R,
+      minZ: z - PLAYER_R, maxZ: z + d + PLAYER_R,
+    });
+    if (allowPicture && pictureCount < maxPictures && Math.random() < 0.12) {
+      const pic = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.4, 1.4),
+        new THREE.MeshStandardMaterial({
+          map: makePictureTexture(),
+          roughness: 0.65,
+          metalness: 0.1,
+        })
+      );
+      if (w > d) {
+        const sign = Math.random() < 0.5 ? 1 : -1;
+        pic.position.set(x + w / 2, WALL_H / 2 + 0.1, z + d / 2 + sign * (d / 2 + 0.025));
+        if (sign < 0) pic.rotation.y = Math.PI;
+      } else {
+        const sign = Math.random() < 0.5 ? 1 : -1;
+        pic.position.set(x + w / 2 + sign * (w / 2 + 0.025), WALL_H / 2 + 0.1, z + d / 2);
+        pic.rotation.y = sign > 0 ? -Math.PI / 2 : Math.PI / 2;
+      }
+      mazeGroup.add(pic);
+      pictureCount++;
+    }
+  }
+
+  addWall(-WT, -WT, totalW + WT * 2, WT, false);
+  addWall(-WT, totalH, totalW + WT * 2, WT, false);
+  addWall(-WT, 0, WT, totalH, false);
+  addWall(totalW, 0, WT, totalH, false);
+
+  for (let y = 0; y < MAZE_H; y++) {
+    for (let x = 0; x < MAZE_W; x++) {
+      const c = maze[y][x];
+      const px = x * CELL;
+      const pz = y * CELL;
+      if (c.N && y > 0) addWall(px, pz - WT / 2, CELL, WT, true);
+      if (c.W && x > 0) addWall(px - WT / 2, pz, WT, CELL, true);
+    }
+  }
+
+  const gx = (MAZE_W - 1) * CELL + CELL / 2;
+  const gz = (MAZE_H - 1) * CELL + CELL / 2;
+  goalMesh = new THREE.Mesh(
+    new THREE.TorusKnotGeometry(0.55, 0.18, 96, 16),
+    new THREE.MeshStandardMaterial({
+      color: 0x88ffb0,
+      emissive: 0x66ff99,
+      emissiveIntensity: 2.5,
+      roughness: 0.25,
+      metalness: 0.85,
+    })
+  );
+  goalMesh.position.set(gx, 1.6, gz);
+  mazeGroup.add(goalMesh);
+
+  const pillar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5, 0.65, 0.8, 16),
+    new THREE.MeshStandardMaterial({
+      color: 0x2a3a2a, emissive: 0x224422,
+      emissiveIntensity: 0.3, roughness: 0.6,
+    })
+  );
+  pillar.position.set(gx, 0.4, gz);
+  mazeGroup.add(pillar);
+
+  goalLight.position.set(gx, 2.5, gz);
+  goalLight.intensity = 3.0;
+
+  for (const m of monsters) {
+    if (m.root && m.root.parent) m.root.parent.remove(m.root);
+  }
+  monsters = [];
+
+  for (let i = 0; i < NUM_MONSTERS; i++) {
+    const root = makeMonster();
+    mazeGroup.add(root);
+    const mixer = newMixerState();
+    mixer.role = MONSTER_ROLES[i];
+    let mx, my;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      mx = (Math.random() * MAZE_W) | 0;
+      my = (Math.random() * MAZE_H) | 0;
+      const distFromPlayer = Math.abs(mx) + Math.abs(my);
+      const tooCloseToOther = monsters.some((other) => {
+        return Math.abs(other.mixer.cell.x - mx) + Math.abs(other.mixer.cell.y - my) < 4;
+      });
+      if (distFromPlayer > 6 && !tooCloseToOther) break;
+    }
+    mixer.cell = { x: mx, y: my };
+    mixer.fromCell = { x: mx, y: my };
+    mixer.toCell = { x: mx, y: my };
+    mixer.lastTeleport = performance.now() / 1000;
+    root.position.set(mx * CELL + CELL / 2, 0, my * CELL + CELL / 2);
+    monsters.push({ root, mixer, role: MONSTER_ROLES[i] });
+  }
+  monster = monsters[0].root;
+  monsterMixer = monsters[0].mixer;
+
+  yaw.position.set(CELL / 2, EYE, CELL / 2);
+  yaw.rotation.set(0, 0, 0);
+  pitch.rotation.set(0, 0, 0);
+  camera.position.set(0, 0, 0);
+
+  stamina = STAMINA_MAX;
+  exhausted = false;
+  startTime = performance.now();
+  wonTime = 0;
+}
+
+/* ============================================================
+   MONSTER — geometry helpers
+   ============================================================ */
+function makeSuitTexture() {
+  const s = 256, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.fillStyle = '#070708';
+  x.fillRect(0, 0, s, s);
+  for (let i = 0; i < 4000; i++) {
+    x.fillStyle = `rgba(${20 + Math.random() * 16 | 0},${18 + Math.random() * 14 | 0},${22 + Math.random() * 16 | 0},${Math.random() * 0.55})`;
+    x.fillRect(Math.random() * s, Math.random() * s, 1, 1);
+  }
+  for (let i = 0; i < 300; i++) {
+    x.fillStyle = `rgba(255,255,255,${Math.random() * 0.03})`;
+    x.fillRect(Math.random() * s, Math.random() * s, 1, 1);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+function makeFaceTexture() {
+  const s = 256, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const x = c.getContext('2d');
+  x.fillStyle = '#eee5d8';
+  x.fillRect(0, 0, s, s);
+  for (let i = 0; i < 3000; i++) {
+    x.fillStyle = `rgba(${180 + Math.random() * 40 | 0},${170 + Math.random() * 30 | 0},${160 + Math.random() * 30 | 0},${Math.random() * 0.18})`;
+    x.fillRect(Math.random() * s, Math.random() * s, 1, 1);
+  }
+  for (let i = 0; i < 1500; i++) {
+    x.fillStyle = `rgba(255,255,255,${Math.random() * 0.08})`;
+    x.fillRect(Math.random() * s, Math.random() * s, 1, 1);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/* ============================================================
+   MONSTER — GLB model with material override + face cover
+   ============================================================ */
+let baseGltf = null;
+let baseAnimations = null;
+
+const GLB_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@0edc965186ba1af11fd2d7cd45ecad3dbe38957f/examples/models/gltf/Soldier.glb';
+
+async function loadBaseMonsterModel() {
+  const loader = new GLTFLoader();
+  try {
+    const gltf = await loader.loadAsync(GLB_URL);
+    baseGltf = gltf.scene;
+    baseAnimations = gltf.animations;
+    window.__glbStatus = `LOADED ${baseGltf.children.length} children, ${gltf.animations.length} anims`;
+    return true;
+  } catch (e) {
+    console.warn('Monster model load failed, using procedural fallback', e);
+    window.__glbStatus = 'FAILED: ' + (e && e.message);
+    baseGltf = null;
+    return false;
+  }
+}
+
+function makeMonsterFromGLB() {
+  if (!baseGltf) return null;
+  const cloned = SkeletonUtils.clone(baseGltf);
+
+  const suitMat = new THREE.MeshStandardMaterial({
+    color: 0x080808,
+    roughness: 0.45,
+    metalness: 0.12,
+  });
+
+  cloned.traverse((node) => {
+    if (node.isMesh) {
+      node.material = suitMat;
+      node.castShadow = false;
+      node.receiveShadow = false;
+      node.frustumCulled = false;
+    }
+  });
+
+  let headBone = null;
+  cloned.traverse((node) => {
+    if (node.isBone) {
+      const name = (node.name || '').toLowerCase();
+      if (name.includes('head') && !headBone) headBone = node;
+    }
+  });
+
+  const headWrapper = new THREE.Group();
+  if (headBone) {
+    headBone.add(headWrapper);
+  } else {
+    cloned.add(headWrapper);
+    headWrapper.position.y = 1.7;
+  }
+
+  const skinMat = new THREE.MeshStandardMaterial({
+    color: 0xf5e8d2,
+    roughness: 0.55,
+    metalness: 0.02,
+    emissive: 0x150810,
+    emissiveIntensity: 0.08,
+  });
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.13, 32, 24), skinMat);
+  face.scale.set(0.85, 1.15, 0.95);
+  face.position.set(0, 0.05, 0);
+  face.renderOrder = 1;
+  headWrapper.add(face);
+
+  const eyeMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xfff5d0,
+    emissiveIntensity: 3.0,
+    roughness: 0.2,
+    metalness: 0.5,
+  });
+  for (const ex of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), eyeMat);
+    eye.position.set(ex * 0.04, 0.05, -0.115);
+    headWrapper.add(eye);
+  }
+  const eyeLight = new THREE.PointLight(0xfff0c0, 0.3, 1.4, 2.0);
+  eyeLight.position.set(0, 0.05, -0.13);
+  headWrapper.add(eyeLight);
+
+  cloned.scale.set(0.78, 1.25, 0.78);
+
+  const outer = new THREE.Group();
+  outer.add(cloned);
+  outer.userData.skinned = cloned;
+  outer.userData.head = headWrapper;
+  outer.userData.isGLB = true;
+
+  if (baseAnimations && baseAnimations.length) {
+    const mixer = new THREE.AnimationMixer(cloned);
+    const actions = [];
+    let walkClip = baseAnimations[0];
+    for (const clip of baseAnimations) {
+      const n = (clip.name || '').toLowerCase();
+      if (n.includes('walk') || n.includes('run')) {
+        walkClip = clip;
+        break;
+      }
+    }
+    const action = mixer.clipAction(walkClip);
+    action.play();
+    action.setEffectiveWeight(0);
+    actions.push(action);
+    outer.userData.animMixer = mixer;
+    outer.userData.animActions = actions;
+  }
+
+  return outer;
+}
+
+function makeMonster() {
+  return makeProceduralMonster();
+}
+
+function makeProceduralMonster() {
+  const g = new THREE.Group();
+
+  const suit = new THREE.MeshStandardMaterial({
+    color: 0x060608,
+    roughness: 0.55,
+    metalness: 0.04,
+  });
+  const skin = new THREE.MeshStandardMaterial({
+    color: 0xf2e6d4,
+    roughness: 0.5,
+    metalness: 0.02,
+    emissive: 0x120608,
+    emissiveIntensity: 0.08,
+  });
+  const eyeMat = new THREE.MeshStandardMaterial({
+    color: 0x000000,
+    emissive: 0xfff5dc,
+    emissiveIntensity: 2.5,
+    roughness: 0.4,
+    metalness: 0,
+  });
+
+  const pelvis = new THREE.Group();
+  pelvis.position.y = 1.92;
+  g.add(pelvis);
+
+  const torsoProfile = [
+    new THREE.Vector2(0.03, -0.75),
+    new THREE.Vector2(0.13, -0.7),
+    new THREE.Vector2(0.16, -0.55),
+    new THREE.Vector2(0.135, -0.3),
+    new THREE.Vector2(0.115, -0.05),
+    new THREE.Vector2(0.135, 0.2),
+    new THREE.Vector2(0.165, 0.4),
+    new THREE.Vector2(0.21, 0.6),
+    new THREE.Vector2(0.19, 0.7),
+    new THREE.Vector2(0.085, 0.78),
+    new THREE.Vector2(0.03, 0.8),
+  ];
+  const torsoGeo = new THREE.LatheGeometry(torsoProfile, 32);
+  const torso = new THREE.Mesh(torsoGeo, suit);
+  torso.scale.z = 0.65;
+  pelvis.add(torso);
+
+  const collarProfile = [
+    new THREE.Vector2(0.12, 0),
+    new THREE.Vector2(0.14, 0.05),
+    new THREE.Vector2(0.10, 0.10),
+    new THREE.Vector2(0.04, 0.12),
+  ];
+  const collar = new THREE.Mesh(new THREE.LatheGeometry(collarProfile, 24), new THREE.MeshStandardMaterial({
+    color: 0xe8e2d2, roughness: 0.7, metalness: 0,
+  }));
+  collar.position.y = 0.7;
+  collar.scale.z = 0.65;
+  pelvis.add(collar);
+
+  const tieMat = new THREE.MeshStandardMaterial({
+    color: 0x080808, roughness: 0.4, metalness: 0.15,
+  });
+  const tieKnot = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.02), tieMat);
+  tieKnot.position.set(0, 0.76, -0.12);
+  pelvis.add(tieKnot);
+  const tieBody = new THREE.Mesh(new THREE.PlaneGeometry(0.045, 0.7), tieMat);
+  tieBody.position.set(0, 0.4, -0.122);
+  tieBody.rotation.y = Math.PI;
+  pelvis.add(tieBody);
+
+  const headGroup = new THREE.Group();
+  headGroup.position.y = 1.02;
+  pelvis.add(headGroup);
+
+  const headProfile = [
+    new THREE.Vector2(0.02, -0.22),
+    new THREE.Vector2(0.07, -0.18),
+    new THREE.Vector2(0.105, -0.10),
+    new THREE.Vector2(0.125, -0.02),
+    new THREE.Vector2(0.13, 0.06),
+    new THREE.Vector2(0.125, 0.14),
+    new THREE.Vector2(0.11, 0.20),
+    new THREE.Vector2(0.075, 0.26),
+    new THREE.Vector2(0.025, 0.30),
+  ];
+  const headGeo = new THREE.LatheGeometry(headProfile, 48);
+  const head = new THREE.Mesh(headGeo, skin);
+  head.scale.z = 1.0;
+  headGroup.add(head);
+
+  for (const ex of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.009, 12, 10), eyeMat);
+    eye.position.set(ex * 0.04, 0.03, -0.115);
+    headGroup.add(eye);
+  }
+
+  const limbs = {};
+  for (const side of ['L', 'R']) {
+    const sx = side === 'L' ? -1 : 1;
+    const shoulder = new THREE.Group();
+    shoulder.position.set(sx * 0.19, 0.55, 0);
+    pelvis.add(shoulder);
+    limbs[`${side}Shoulder`] = shoulder;
+
+    const armProfile = [
+      new THREE.Vector2(0.0, 0.04),
+      new THREE.Vector2(0.055, 0.0),
+      new THREE.Vector2(0.048, -0.3),
+      new THREE.Vector2(0.044, -0.6),
+      new THREE.Vector2(0.04, -0.9),
+      new THREE.Vector2(0.038, -1.2),
+      new THREE.Vector2(0.04, -1.42),
+      new THREE.Vector2(0.032, -1.55),
+      new THREE.Vector2(0.0, -1.58),
+    ];
+    const armGeo = new THREE.LatheGeometry(armProfile, 18);
+    const arm = new THREE.Mesh(armGeo, suit);
+    shoulder.add(arm);
+
+    const handProfile = [
+      new THREE.Vector2(0.0, 0.02),
+      new THREE.Vector2(0.045, 0.0),
+      new THREE.Vector2(0.05, -0.04),
+      new THREE.Vector2(0.045, -0.1),
+      new THREE.Vector2(0.025, -0.16),
+      new THREE.Vector2(0.0, -0.18),
+    ];
+    const handGeo = new THREE.LatheGeometry(handProfile, 16);
+    const hand = new THREE.Mesh(handGeo, skin);
+    hand.position.y = -1.58;
+    shoulder.add(hand);
+
+    const wristBand = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.03, 14), new THREE.MeshStandardMaterial({ color: 0xe8e2d2, roughness: 0.7 }));
+    wristBand.position.y = -1.55;
+    shoulder.add(wristBand);
+  }
+
+  for (const side of ['L', 'R']) {
+    const sx = side === 'L' ? -1 : 1;
+    const hip = new THREE.Group();
+    hip.position.set(sx * 0.08, -0.7, 0);
+    pelvis.add(hip);
+    limbs[`${side}Hip`] = hip;
+
+    const legProfile = [
+      new THREE.Vector2(0.0, 0.05),
+      new THREE.Vector2(0.085, 0.0),
+      new THREE.Vector2(0.08, -0.35),
+      new THREE.Vector2(0.07, -0.65),
+      new THREE.Vector2(0.06, -0.95),
+      new THREE.Vector2(0.055, -1.12),
+      new THREE.Vector2(0.04, -1.17),
+      new THREE.Vector2(0.0, -1.18),
+    ];
+    const legGeo = new THREE.LatheGeometry(legProfile, 18);
+    const leg = new THREE.Mesh(legGeo, suit);
+    hip.add(leg);
+
+    const footMat = new THREE.MeshStandardMaterial({ color: 0x040404, roughness: 0.3, metalness: 0.3 });
+    const footProfile = [
+      new THREE.Vector2(0.0, 0),
+      new THREE.Vector2(0.07, 0.0),
+      new THREE.Vector2(0.06, -0.05),
+      new THREE.Vector2(0.0, -0.06),
+    ];
+    const foot = new THREE.Mesh(new THREE.LatheGeometry(footProfile, 14), footMat);
+    foot.position.y = -1.18;
+    foot.scale.z = 1.8;
+    foot.position.z = -0.04;
+    hip.add(foot);
+  }
+
+  g.userData.head = headGroup;
+  g.userData.pelvis = pelvis;
+  g.userData.limbs = limbs;
+  g.userData.tendrils = null;
+  return g;
+}
+
+function playerCell() {
+  return {
+    x: Math.min(MAZE_W - 1, Math.max(0, Math.floor(yaw.position.x / CELL))),
+    y: Math.min(MAZE_H - 1, Math.max(0, Math.floor(yaw.position.z / CELL))),
+  };
+}
+
+function distanceToPlayer() {
+  if (!monster) return Infinity;
+  const dx = monster.position.x - yaw.position.x;
+  const dz = monster.position.z - yaw.position.z;
+  return Math.hypot(dx, dz);
+}
+
+function distanceMonsterToPlayer(m) {
+  const dx = m.root.position.x - yaw.position.x;
+  const dz = m.root.position.z - yaw.position.z;
+  return Math.hypot(dx, dz);
+}
+
+function isMonsterInPlayerView(m) {
+  if (!m || !m.root) return false;
+  const dx = m.root.position.x - yaw.position.x;
+  const dz = m.root.position.z - yaw.position.z;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.4) return true;
+  const nx = dx / len, nz = dz / len;
+  const fx = -Math.sin(yaw.rotation.y);
+  const fz = -Math.cos(yaw.rotation.y);
+  const dot = nx * fx + nz * fz;
+  if (dot < 0.45) return false;
+  return hasLineOfSight(yaw.position.x, yaw.position.z, m.root.position.x, m.root.position.z);
+}
+
+function findTeleportCellBehindPlayer() {
+  const fx = -Math.sin(yaw.rotation.y);
+  const fz = -Math.cos(yaw.rotation.y);
+  const bx = -fx;
+  const bz = -fz;
+  const playerC = playerCell();
+  const candidates = [];
+  for (let r = 5; r <= 9; r++) {
+    for (let off = -2; off <= 2; off++) {
+      const ang = Math.atan2(bz, bx) + (off * 0.4);
+      const tx = Math.round(playerC.x + Math.cos(ang) * r);
+      const ty = Math.round(playerC.y + Math.sin(ang) * r);
+      if (tx < 0 || tx >= MAZE_W || ty < 0 || ty >= MAZE_H) continue;
+      const candWorldX = tx * CELL + CELL / 2;
+      const candWorldZ = ty * CELL + CELL / 2;
+      const visible = hasLineOfSight(yaw.position.x, yaw.position.z, candWorldX, candWorldZ);
+      if (visible) continue;
+      candidates.push({ x: tx, y: ty, r });
+    }
+  }
+  if (!candidates.length) return null;
+  return candidates[(Math.random() * candidates.length) | 0];
+}
+
+function chooseRandomNeighbor(cell) {
+  const c = maze[cell.y][cell.x];
+  const nbs = cellNeighbors(c);
+  if (!nbs.length) return cell;
+  return nbs[(Math.random() * nbs.length) | 0];
+}
+
+/* ============================================================
+   LINE OF SIGHT (cell-based ray-march)
+   ============================================================ */
+function hasLineOfSight(fromX, fromZ, toX, toZ) {
+  if (!maze) return true;
+  const dx = toX - fromX;
+  const dz = toZ - fromZ;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.01) return true;
+  const stepSize = 0.18;
+  const steps = Math.ceil(len / stepSize);
+  let prevCx = Math.floor(fromX / CELL);
+  let prevCy = Math.floor(fromZ / CELL);
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const x = fromX + dx * t;
+    const z = fromZ + dz * t;
+    const cx = Math.floor(x / CELL);
+    const cy = Math.floor(z / CELL);
+    if (cx === prevCx && cy === prevCy) continue;
+    if (cx < 0 || cx >= MAZE_W || cy < 0 || cy >= MAZE_H) return false;
+    if (cx !== prevCx) {
+      if (cx > prevCx) {
+        if (maze[prevCy][prevCx].E) return false;
+      } else {
+        if (maze[prevCy][prevCx].W) return false;
+      }
+    }
+    if (cy !== prevCy) {
+      if (cy > prevCy) {
+        if (maze[prevCy][prevCx].S) return false;
+      } else {
+        if (maze[prevCy][prevCx].N) return false;
+      }
+    }
+    prevCx = cx;
+    prevCy = cy;
+  }
+  return true;
+}
+
+function isInPlayerView() {
+  if (!monster) return false;
+  const dx = monster.position.x - yaw.position.x;
+  const dz = monster.position.z - yaw.position.z;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.4) return true;
+  const nx = dx / len, nz = dz / len;
+  const fx = -Math.sin(yaw.rotation.y);
+  const fz = -Math.cos(yaw.rotation.y);
+  const dot = nx * fx + nz * fz;
+  if (dot < 0.45) return false;
+  return hasLineOfSight(yaw.position.x, yaw.position.z, monster.position.x, monster.position.z);
+}
+
+/* ============================================================
+   MONSTER AI — stalking state machine
+     wander  : far away, random walk
+     stalk   : maintain 3-5 cells from player, follow path with delay
+     hunt    : BFS straight to player, fast
+     stare   : in player view, frozen
+   ============================================================ */
+
+
+function pickStalkAnchor(playerC, monsterC) {
+  const path = bfsPath(monsterC, playerC);
+  if (!path || path.length === 0) return monsterC;
+  const stopBack = 4;
+  const idx = Math.max(0, path.length - stopBack);
+  return path[idx];
+}
+
+function updateMonsters(dt, sprinting) {
+  if (!monsters.length || !maze) return undefined;
+  let nearest = Infinity;
+  for (const m of monsters) {
+    const d = updateOneMonster(m, dt, sprinting);
+    if (d !== undefined && d < nearest) nearest = d;
+  }
+  return nearest;
+}
+
+function updateOneMonster(m, dt, sprinting) {
+  if (!m || !m.root || !maze) return undefined;
+  const monster = m.root;
+  const monsterMixer = m.mixer;
+
+  const distWorld = distanceMonsterToPlayer(m);
+  const playerC = playerCell();
+  const monsterC = monsterMixer.cell;
+  const distCells = cellDist(monsterC, playerC);
+  const inView = isMonsterInPlayerView(m);
+
+  const nowSec = performance.now() / 1000;
+  const forceHunt = nowSec < monsterMixer.forceHuntUntil;
+
+  if (inView) {
+    monsterMixer.stareHoldTimer = 0.45;
+    monsterMixer.stareTime += dt;
+  } else {
+    monsterMixer.stareHoldTimer = Math.max(0, monsterMixer.stareHoldTimer - dt);
+    monsterMixer.stareTime = Math.max(0, monsterMixer.stareTime - dt * 1.5);
+  }
+  const staring = monsterMixer.stareHoldTimer > 0 && !forceHunt;
+
+  const heard = sprinting && distCells <= MONSTER_HEAR_RADIUS;
+  const veryClose = distCells <= 3;
+  const losToPlayer = hasLineOfSight(monster.position.x, monster.position.z, yaw.position.x, yaw.position.z);
+
+  if (!inView) {
+    const now = performance.now() / 1000;
+    const sinceTeleport = now - monsterMixer.lastTeleport;
+    const minCooldown = monsterMixer.state === 'hunt' ? 14 : 11;
+    if (sinceTeleport > minCooldown && distCells > 5) {
+      const dest = findTeleportCellBehindPlayer();
+      if (dest) {
+        monsterMixer.cell = { x: dest.x, y: dest.y };
+        monsterMixer.fromCell = { x: dest.x, y: dest.y };
+        monsterMixer.toCell = { x: dest.x, y: dest.y };
+        monsterMixer.progress = 1;
+        monsterMixer.path = [];
+        monsterMixer.pathTimer = 0;
+        monsterMixer.lastTeleport = now;
+        monster.position.x = dest.x * CELL + CELL / 2;
+        monster.position.z = dest.y * CELL + CELL / 2;
+      }
+    }
+  }
+  const directSees = losToPlayer && distCells <= MONSTER_SIGHT_RADIUS;
+
+  let newState = monsterMixer.state;
+  if (forceHunt) {
+    newState = 'hunt';
+  } else if (staring) {
+    newState = 'stare';
+  } else if (heard || veryClose || directSees) {
+    newState = 'hunt';
+  } else if (distCells <= 12) {
+    newState = monsterMixer.role === 'ambusher' ? 'stalk' : 'stalk';
+  } else {
+    newState = 'wander';
+  }
+  if (monsterMixer.role === 'ambusher' && newState === 'stalk') {
+    monsterMixer.ambushTimer -= dt;
+    if (!monsterMixer.ambushTarget || monsterMixer.ambushTimer <= 0) {
+      const aheadDx = -Math.sin(yaw.rotation.y);
+      const aheadDz = -Math.cos(yaw.rotation.y);
+      const tx = Math.max(0, Math.min(MAZE_W - 1, Math.round(playerC.x + aheadDx * 5)));
+      const ty = Math.max(0, Math.min(MAZE_H - 1, Math.round(playerC.y + aheadDz * 5)));
+      monsterMixer.ambushTarget = { x: tx, y: ty };
+      monsterMixer.ambushTimer = 4;
+    }
+  }
+  monsterMixer.state = newState;
+
+  monsterMixer.pathTimer -= dt;
+  if (monsterMixer.pathTimer <= 0 && (newState === 'hunt' || newState === 'stare')) {
+    const path = bfsPath(monsterC, playerC);
+    monsterMixer.path = path || [];
+    monsterMixer.pathTimer = MONSTER_REPATH_INTERVAL;
+  }
+  if (monsterMixer.stalkRepathTimer <= 0 && newState === 'stalk') {
+    let stalkAnchor;
+    if (monsterMixer.role === 'ambusher' && monsterMixer.ambushTarget) {
+      stalkAnchor = monsterMixer.ambushTarget;
+    } else {
+      stalkAnchor = pickStalkAnchor(playerC, monsterC);
+    }
+    const path = bfsPath(monsterC, stalkAnchor);
+    monsterMixer.path = path || [];
+    monsterMixer.stalkRepathTimer = monsterMixer.role === 'ambusher' ? 1.5 : 0.9;
+  }
+  monsterMixer.stalkRepathTimer -= dt;
+
+  let speed;
+  if (newState === 'stare') {
+    const creep = Math.max(0, Math.min(1, (monsterMixer.stareTime - 1.2) / 2.0));
+    speed = MONSTER_SPEED_HUNT * 0.22 * creep;
+  } else if (newState === 'hunt') speed = MONSTER_SPEED_HUNT;
+  else if (newState === 'stalk') speed = MONSTER_SPEED_STALK;
+  else speed = MONSTER_SPEED_IDLE;
+  if (inView && newState !== 'stare' && !forceHunt) speed *= 0.35;
+  if (!inView && (newState === 'hunt' || newState === 'stalk')) speed *= 1.25;
+
+  if (monsterMixer.progress >= 1) {
+    monsterMixer.fromCell = monsterMixer.toCell;
+    monsterMixer.cell = monsterMixer.toCell;
+    if (newState !== 'stare') {
+      audio.monsterStep(distWorld);
+    }
+    let next;
+    if ((newState === 'hunt' || newState === 'stalk' || newState === 'stare') && monsterMixer.path && monsterMixer.path.length) {
+      next = monsterMixer.path.shift();
+    } else if (newState === 'wander') {
+      next = chooseRandomNeighbor(monsterMixer.cell);
+    } else {
+      next = monsterMixer.cell;
+    }
+    if (!next) next = monsterMixer.cell;
+    monsterMixer.toCell = next;
+    monsterMixer.progress = 0;
+  }
+
+  monsterMixer.progress += dt * speed;
+  if (monsterMixer.progress > 1) monsterMixer.progress = 1;
+
+  const fx = monsterMixer.fromCell.x * CELL + CELL / 2;
+  const fz = monsterMixer.fromCell.y * CELL + CELL / 2;
+  const tx = monsterMixer.toCell.x * CELL + CELL / 2;
+  const tz = monsterMixer.toCell.y * CELL + CELL / 2;
+  let isMoving = (tx !== fx || tz !== fz) && speed > 0.01;
+
+  const wantsDirectApproach =
+    (newState === 'hunt' || newState === 'stare') &&
+    distCells === 0 &&
+    speed > 0.01;
+  if (wantsDirectApproach) {
+    const dx = yaw.position.x - monster.position.x;
+    const dz = yaw.position.z - monster.position.z;
+    const len = Math.hypot(dx, dz);
+    if (len > 0.01) {
+      const speedMult = newState === 'stare' ? 1.0 : 0.42;
+      const worldSpeed = speed * CELL * speedMult;
+      const step = Math.min(worldSpeed * dt, Math.max(0, len - 0.05));
+      monster.position.x += (dx / len) * step;
+      monster.position.z += (dz / len) * step;
+      isMoving = true;
+    }
+  } else {
+    monster.position.x = fx + (tx - fx) * monsterMixer.progress;
+    monster.position.z = fz + (tz - fz) * monsterMixer.progress;
+  }
+  const bobSpeed = newState === 'hunt' ? 0.011 : 0.005;
+  monster.position.y = newState === 'stare'
+    ? 0
+    : Math.abs(Math.sin(performance.now() * bobSpeed)) * (isMoving ? 0.06 : 0.015);
+
+  if (monster.userData.isGLB && monster.userData.animMixer) {
+    let animSpeed;
+    if (newState === 'stare') animSpeed = 0;
+    else if (!isMoving) animSpeed = 0.001;
+    else if (newState === 'hunt') animSpeed = 1.6;
+    else if (newState === 'stalk') animSpeed = 1.0;
+    else animSpeed = 0.7;
+    monster.userData.animMixer.timeScale = animSpeed;
+    for (const action of monster.userData.animActions) {
+      action.setEffectiveWeight(1.0);
+    }
+    monster.userData.animMixer.update(dt);
+  }
+
+  const limbs = monster.userData.limbs;
+  if (limbs && isMoving) {
+    const phaseRate = newState === 'hunt' ? 0.008 : (newState === 'stare' ? 0.003 : 0.0045);
+    const phase = performance.now() * phaseRate;
+    const swing = Math.sin(phase);
+    const amp = newState === 'hunt' ? 0.55 : (newState === 'stare' ? 0.18 : 0.32);
+    if (limbs.LHip) limbs.LHip.rotation.x =  swing * amp;
+    if (limbs.RHip) limbs.RHip.rotation.x = -swing * amp;
+    if (limbs.LShoulder) limbs.LShoulder.rotation.x = -swing * amp * 0.6;
+    if (limbs.RShoulder) limbs.RShoulder.rotation.x =  swing * amp * 0.6;
+  } else if (limbs) {
+    for (const k of Object.keys(limbs)) {
+      limbs[k].rotation.x *= 0.85;
+    }
+  }
+
+  const tendrils = monster.userData.tendrils;
+  if (tendrils) {
+    const baseSway = Math.sin(performance.now() * 0.0015) * 0.12;
+    const aggression = newState === 'hunt' ? 0.4 : newState === 'stalk' ? 0.18 : 0.05;
+    for (let i = 0; i < tendrils.children.length; i++) {
+      const t = tendrils.children[i];
+      t.rotation.x = Math.sin(performance.now() * 0.002 + i) * (0.1 + aggression) - 0.05;
+      t.rotation.z = Math.cos(performance.now() * 0.0017 + i * 1.3) * (0.08 + aggression * 0.5);
+    }
+    tendrils.rotation.z = baseSway;
+  }
+
+  if (isMoving) {
+    const target = Math.atan2(-(tx - fx), -(tz - fz));
+    let diff = target - monster.rotation.y;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    monster.rotation.y += diff * Math.min(1, dt * 5);
+  }
+
+  if (distWorld < 6 || newState === 'stare') {
+    const target = Math.atan2(
+      monster.position.x - yaw.position.x,
+      monster.position.z - yaw.position.z
+    );
+    let diff = target - monster.rotation.y;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    const turnRate = newState === 'stare' ? 1.5 : 4.5;
+    monster.rotation.y += diff * Math.min(1, dt * turnRate);
+    if (monster.userData.head && distWorld < 4) {
+      monster.userData.head.rotation.x = -0.12;
+    }
+  } else if (monster.userData.head) {
+    monster.userData.head.rotation.x *= 0.9;
+  }
+
+  let growlAmt;
+  if (newState === 'stare') growlAmt = 0.9;
+  else if (newState === 'hunt') growlAmt = Math.max(0, Math.min(1, (14 - distWorld) / 12)) * 1.0;
+  else if (newState === 'stalk') growlAmt = Math.max(0, Math.min(1, (14 - distWorld) / 12)) * 0.55;
+  else growlAmt = 0.0;
+  audio.setGrowl(growlAmt);
+
+  return distWorld;
+}
+
+
+/* ============================================================
+   CONTROLS
+   ============================================================ */
+const keys = {};
+
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyN' && pointerLocked) {
+    buildMaze();
+  }
+  if (e.code === 'KeyT' && pointerLocked) {
+    const fx = -Math.sin(yaw.rotation.y);
+    const fz = -Math.cos(yaw.rotation.y);
+    const dist = 6.0;
+    const idx = ((window.__testIdx || 0) % monsters.length);
+    window.__testIdx = (window.__testIdx || 0) + 1;
+    const m = monsters[idx];
+    if (m) {
+      const tx = yaw.position.x + fx * dist;
+      const tz = yaw.position.z + fz * dist;
+      m.root.position.set(tx, 0, tz);
+      const cellX = Math.max(0, Math.min(MAZE_W - 1, Math.floor(tx / CELL)));
+      const cellY = Math.max(0, Math.min(MAZE_H - 1, Math.floor(tz / CELL)));
+      m.mixer.cell = { x: cellX, y: cellY };
+      m.mixer.fromCell = { x: cellX, y: cellY };
+      m.mixer.toCell = { x: cellX, y: cellY };
+      m.mixer.progress = 1;
+      m.mixer.path = [];
+      m.mixer.pathTimer = 0;
+      m.mixer.lastTeleport = performance.now() / 1000;
+      m.mixer.forceHuntUntil = (performance.now() / 1000) + 5;
+      m.mixer.state = 'hunt';
+      m.mixer.stareHoldTimer = 0;
+      m.mixer.stareTime = 0;
+      m.root.lookAt(yaw.position.x, m.root.position.y, yaw.position.z);
+    }
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+window.addEventListener('mousemove', (e) => {
+  if (!pointerLocked) return;
+  yaw.rotation.y -= e.movementX * MOUSE_SENS;
+  pitch.rotation.x -= e.movementY * MOUSE_SENS;
+  const lim = Math.PI / 2 - 0.02;
+  pitch.rotation.x = Math.max(-lim, Math.min(lim, pitch.rotation.x));
+});
+
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === renderer.domElement;
+  if (pointerLocked) {
+    gameState = 'playing';
+    audio.resume();
+  } else if (gameState === 'playing') {
+    gameState = 'paused';
+  }
+  refreshOverlay();
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ============================================================
+   COLLISION
+   ============================================================ */
+function collides(x, z) {
+  for (let i = 0; i < walls.length; i++) {
+    const w = walls[i];
+    if (x > w.minX && x < w.maxX && z > w.minZ && z < w.maxZ) return true;
+  }
+  return false;
+}
+
+function tryMove(dx, dz) {
+  const p = yaw.position;
+  if (!collides(p.x + dx, p.z)) p.x += dx;
+  if (!collides(p.x, p.z + dz)) p.z += dz;
+}
+
+/* ============================================================
+   HUD
+   ============================================================ */
+const statsEl = document.getElementById('stats');
+const compassEl = document.getElementById('compass');
+const threatEl = document.getElementById('threat');
+const staminaFill = document.getElementById('stamina-fill');
+const redVignette = document.getElementById('red-vignette');
+
+function updateHUD() {
+  const elapsed = (gameState === 'won' || gameState === 'dead') ? wonTime : (performance.now() - startTime) / 1000;
+  statsEl.textContent = `Time: ${elapsed.toFixed(1)}s${gameState === 'won' ? ' — ESCAPED' : ''}${gameState === 'dead' ? ' — DEAD' : ''}`;
+
+  let a = ((yaw.rotation.y % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const deg = a * 180 / Math.PI;
+  let dir;
+  if (deg < 22.5 || deg >= 337.5) dir = 'N';
+  else if (deg < 67.5) dir = 'NW';
+  else if (deg < 112.5) dir = 'W';
+  else if (deg < 157.5) dir = 'SW';
+  else if (deg < 202.5) dir = 'S';
+  else if (deg < 247.5) dir = 'SE';
+  else if (deg < 292.5) dir = 'E';
+  else dir = 'NE';
+  compassEl.textContent = dir;
+
+  staminaFill.style.width = `${(stamina / STAMINA_MAX) * 100}%`;
+  if (exhausted) staminaFill.style.background = '#5a2020';
+  else staminaFill.style.background = 'linear-gradient(90deg, #b85040, #f0a070)';
+}
+
+function updateThreatIndicator(dist) {
+  if (dist === undefined || gameState !== 'playing') {
+    threatEl.textContent = '—';
+    threatEl.classList.remove('danger');
+    redVignette.style.opacity = '0';
+    return;
+  }
+  let label;
+  let vignette = 0;
+  let danger = false;
+  if (dist > 18)      { label = 'SILENT';      vignette = 0; }
+  else if (dist > 12) { label = 'WHISPERS';    vignette = 0.1; }
+  else if (dist > 8)  { label = 'BREATHING';   vignette = 0.25; }
+  else if (dist > 5)  { label = 'CLOSE';       vignette = 0.55; danger = true; }
+  else if (dist > 2.5){ label = 'BEHIND YOU';  vignette = 0.85; danger = true; }
+  else                { label = 'RUN.';        vignette = 1.0;  danger = true; }
+  threatEl.textContent = label;
+  threatEl.classList.toggle('danger', danger);
+  redVignette.style.opacity = String(vignette);
+}
+
+/* ============================================================
+   OVERLAY
+   ============================================================ */
+const overlay = document.getElementById('overlay');
+const overlayH1 = overlay.querySelector('h1');
+const overlayPs = overlay.querySelectorAll('p');
+const actionBtn = document.getElementById('action-btn');
+
+function refreshOverlay() {
+  if (gameState === 'playing') {
+    overlay.classList.add('hidden');
+    overlay.classList.remove('death');
+    return;
+  }
+  overlay.classList.remove('hidden');
+  overlay.classList.toggle('death', gameState === 'dead');
+  if (gameState === 'menu') {
+    overlayH1.textContent = 'THE MAZE';
+    overlayPs[0].textContent = 'Something else is in here with you.';
+    overlayPs[1].textContent = '"It moves when you move. It listens. Don\'t run unless you must."';
+    overlayPs[2].textContent = 'Reach the green beacon to escape. WASD + mouse. ESC to pause.';
+    actionBtn.textContent = 'ENTER';
+  } else if (gameState === 'paused') {
+    overlayH1.textContent = 'PAUSED';
+    overlayPs[0].textContent = 'It hasn\'t forgotten you.';
+    overlayPs[1].textContent = '';
+    overlayPs[2].textContent = 'Click to resume.';
+    actionBtn.textContent = 'RESUME';
+  } else if (gameState === 'won') {
+    overlayH1.textContent = 'YOU ESCAPED';
+    overlayPs[0].textContent = `You made it out alive. Time: ${wonTime.toFixed(1)}s`;
+    overlayPs[1].textContent = 'But did it see your face?';
+    overlayPs[2].textContent = 'Try again?';
+    actionBtn.textContent = 'NEW MAZE';
+  } else if (gameState === 'dead') {
+    overlayH1.textContent = 'YOU DIED';
+    overlayPs[0].textContent = `It caught you after ${wonTime.toFixed(1)} seconds.`;
+    overlayPs[1].textContent = '';
+    overlayPs[2].textContent = 'Try again?';
+    actionBtn.textContent = 'RESPAWN';
+  }
+}
+
+actionBtn.addEventListener('click', () => {
+  audio.ensure();
+  audio.resume();
+  if (gameState === 'won' || gameState === 'dead') {
+    buildMaze();
+    gameState = 'menu';
+  }
+  renderer.domElement.requestPointerLock();
+});
+
+/* ============================================================
+   JUMPSCARE
+   ============================================================ */
+function jumpscareAndDie() {
+  if (gameState !== 'playing') return;
+  gameState = 'dead';
+  wonTime = (performance.now() - startTime) / 1000;
+  document.exitPointerLock();
+
+  let killer = monsters[0];
+  let minDist = Infinity;
+  for (const m of monsters) {
+    const d = distanceMonsterToPlayer(m);
+    if (d < minDist) { minDist = d; killer = m; }
+  }
+
+  if (killer && killer.root.userData.head) {
+    const headPos = new THREE.Vector3();
+    killer.root.userData.head.getWorldPosition(headPos);
+    const dx = yaw.position.x - killer.root.position.x;
+    const dz = yaw.position.z - killer.root.position.z;
+    const len = Math.hypot(dx, dz) || 0.5;
+    const nx = dx / len;
+    const nz = dz / len;
+
+    const camX = headPos.x + nx * 0.38;
+    const camZ = headPos.z + nz * 0.38;
+    const camY = headPos.y - 0.18;
+    yaw.position.set(camX, camY, camZ);
+
+    const toHeadX = headPos.x - camX;
+    const toHeadY = headPos.y - camY;
+    const toHeadZ = headPos.z - camZ;
+    const horiz = Math.sqrt(toHeadX * toHeadX + toHeadZ * toHeadZ);
+    yaw.rotation.set(0, Math.atan2(-toHeadX, -toHeadZ), 0);
+    pitch.rotation.set(Math.atan2(toHeadY, horiz), 0, 0);
+    camera.position.set(0, 0, 0);
+  }
+
+  flashlight.intensity = 18;
+  flashlight.distance = 5;
+  flashlight.angle = Math.PI * 0.32;
+
+  if (audio.ctx) {
+    const t = audio.ctx.currentTime;
+    if (audio.musicGain) {
+      audio.musicGain.gain.cancelScheduledValues(t);
+      audio.musicGain.gain.setValueAtTime(0, t);
+    }
+    if (audio.ambientGain) {
+      audio.ambientGain.gain.cancelScheduledValues(t);
+      audio.ambientGain.gain.setValueAtTime(0, t);
+    }
+  }
+  setTimeout(() => {
+    audio.scream();
+    if (audio.glassShatter) audio.glassShatter();
+  }, 55);
+
+  document.body.classList.add('jumpscare-active');
+
+  setTimeout(() => {
+    document.body.classList.remove('jumpscare-active');
+    refreshOverlay();
+  }, 2400);
+}
+
+/* ============================================================
+   WIN / DEATH
+   ============================================================ */
+function checkWin() {
+  if (gameState !== 'playing' || !goalMesh) return;
+  const dx = yaw.position.x - goalMesh.position.x;
+  const dz = yaw.position.z - goalMesh.position.z;
+  if (dx * dx + dz * dz < 1.3 * 1.3) {
+    gameState = 'won';
+    wonTime = (performance.now() - startTime) / 1000;
+    audio.win();
+    document.exitPointerLock();
+    refreshOverlay();
+  }
+}
+
+function checkDeath() {
+  if (gameState !== 'playing') return;
+  for (const m of monsters) {
+    const d = distanceMonsterToPlayer(m);
+    if (d < MONSTER_CATCH_DIST) {
+      jumpscareAndDie();
+      return;
+    }
+  }
+}
+
+/* ============================================================
+   GAME LOOP
+   ============================================================ */
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+
+  let isMoving = false;
+  let isSprinting = false;
+  let monsterDist;
+
+  if (gameState === 'playing') {
+    const wantsSprint = keys['ShiftLeft'] || keys['ShiftRight'];
+    isSprinting = wantsSprint && stamina > 0.05 && !exhausted;
+    if (isSprinting) {
+      stamina -= STAMINA_DRAIN * dt;
+      if (stamina <= 0) { stamina = 0; exhausted = true; }
+    } else {
+      stamina = Math.min(STAMINA_MAX, stamina + STAMINA_REGEN * dt);
+      if (exhausted && stamina > STAMINA_MAX * 0.4) exhausted = false;
+    }
+
+    const speed = (isSprinting ? SPEED_RUN : SPEED_WALK) * dt;
+    const sin = Math.sin(yaw.rotation.y);
+    const cos = Math.cos(yaw.rotation.y);
+
+    let mx = 0, mz = 0;
+    if (keys['KeyW'] || keys['ArrowUp'])    { mx += -sin; mz += -cos; }
+    if (keys['KeyS'] || keys['ArrowDown'])  { mx +=  sin; mz +=  cos; }
+    if (keys['KeyA'] || keys['ArrowLeft'])  { mx += -cos; mz +=  sin; }
+    if (keys['KeyD'] || keys['ArrowRight']) { mx +=  cos; mz += -sin; }
+
+    const len = Math.hypot(mx, mz);
+    if (len > 0) {
+      isMoving = true;
+      mx = (mx / len) * speed;
+      mz = (mz / len) * speed;
+      tryMove(mx, mz);
+      walkBob += dt * (isSprinting ? 14 : 9);
+      footstepDist += Math.hypot(mx, mz);
+      if (footstepDist > (isSprinting ? 1.2 : 1.6)) {
+        footstepDist = 0;
+        audio.footstep(isSprinting ? 0.08 : 0.04);
+      }
+    } else {
+      walkBob *= 0.92;
+    }
+
+    camera.position.y = Math.sin(walkBob) * 0.06;
+    camera.position.x = Math.cos(walkBob * 0.5) * 0.04;
+
+    monsterDist = updateMonsters(dt, isSprinting);
+
+    const proximity = monsterDist !== undefined ? Math.max(0, Math.min(1, (16 - monsterDist) / 14)) : 0;
+    const heartRate = 0.8 + proximity * 2.6;
+    heartTimer += dt;
+    if (heartTimer >= 1 / heartRate) {
+      heartTimer = 0;
+      if (proximity > 0.15) {
+        audio.beat(0.2 + proximity * 0.4);
+        setTimeout(() => audio.beat(0.18 + proximity * 0.35), 120);
+      }
+    }
+
+    checkWin();
+    checkDeath();
+  } else {
+    monsterDist = undefined;
+  }
+
+  if (goalMesh) {
+    goalMesh.rotation.y += dt * 0.8;
+    goalMesh.rotation.x += dt * 0.4;
+    goalMesh.position.y = 1.6 + Math.sin(performance.now() * 0.0022) * 0.18;
+    goalLight.intensity = 3.0 + Math.sin(performance.now() * 0.005) * 0.6;
+  }
+
+  flashlight.intensity = 6.0 + Math.sin(performance.now() * 0.012) * 0.18 + (Math.random() - 0.5) * 0.12;
+
+  updateHUD();
+  updateThreatIndicator(monsterDist);
+
+  renderer.render(scene, camera);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+const loadingEl = document.getElementById('loading');
+
+(async () => {
+  loadingEl.textContent = 'SUMMONING…';
+  try {
+    await loadBaseMonsterModel();
+  } catch (e) {
+    console.warn('continuing without GLB', e);
+  }
+  buildMaze();
+  gameState = 'menu';
+  refreshOverlay();
+  animate();
+  loadingEl.style.display = 'none';
+  overlay.classList.remove('hidden');
+  window.__maze = { monsters: () => monsters, yaw, CELL, EYE, baseGltf: () => baseGltf, gameState: () => gameState, setGameState: (s) => { gameState = s; }, overlay };
+  if (location.search.includes('debug=1')) {
+    overlay.classList.add('hidden');
+    gameState = 'playing';
+    yaw.position.set(CELL / 2, EYE, 0.4);
+    yaw.rotation.set(0, Math.PI, 0);
+    pitch.rotation.x = 0.05;
+    if (monsters[0]) {
+      const m = monsters[0];
+      m.root.position.set(CELL / 2, 0, 3.6);
+      const cellX = 0, cellY = Math.floor(3.6 / CELL);
+      m.mixer.cell = { x: cellX, y: cellY };
+      m.mixer.fromCell = { x: cellX, y: cellY };
+      m.mixer.toCell = { x: cellX, y: cellY };
+      m.mixer.forceHuntUntil = (performance.now() / 1000) + 30;
+      m.mixer.state = 'hunt';
+      m.root.lookAt(yaw.position.x, m.root.position.y + 1.5, yaw.position.z);
+    }
+  }
+})();
+</script>
+</body>
+</html>

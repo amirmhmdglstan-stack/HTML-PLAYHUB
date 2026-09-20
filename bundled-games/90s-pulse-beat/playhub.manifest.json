@@ -1,0 +1,46 @@
+{
+  "manifestVersion": 1,
+  "id": "90s-pulse-beat",
+  "title": "PULSE BEAT",
+  "description": "",
+  "author": "prateek121",
+  "source": {
+    "repo": "https://github.com/prateek121/90s-games.git",
+    "homepage": "https://github.com/prateek121/90s-games",
+    "path": "games/pulse-beat.html"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "90s-games-LICENSE.txt"
+  },
+  "version": "1.0",
+  "genres": [
+    "Music"
+  ],
+  "tags": [],
+  "language": "en",
+  "entryFile": "game.html",
+  "singleFile": true,
+  "qualityTier": null,
+  "sourceCollection": "90s Games",
+  "controls": {
+    "keyboard": true,
+    "mouse": true,
+    "touch": true,
+    "gamepad": false,
+    "notes": "Browser storage detected (localStorage) — saves persist per game."
+  },
+  "requirements": {
+    "keyboard": false,
+    "mouse": false,
+    "landscape": false
+  },
+  "network": {
+    "required": false,
+    "hosts": [],
+    "trackers": []
+  },
+  "bundleVersion": 1,
+  "addedAt": "2026-09-20T11:34:54.373Z",
+  "updatedAt": "2026-09-20T11:34:54.373Z"
+}
