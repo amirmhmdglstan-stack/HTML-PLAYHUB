@@ -25,6 +25,10 @@ const log = scope('protocol');
 
 const APP_SCHEME = 'playhub-app';
 const GAME_SCHEME = 'playhub-game';
+// Partition used by the launcher + player windows. Protocol handlers MUST be
+// registered on this session explicitly: Electron binds handlers per-session
+// and windows on a custom partition do NOT inherit the default session's.
+const SHELL_PARTITION = 'persist:playhub-shell';
 
 function registerSchemes() {
   if (!protocol || typeof protocol.registerSchemesAsPrivileged !== 'function') {
@@ -155,28 +159,58 @@ function handleGame(getPaths, store, request) {
   return fileResponse(abs, { noStore, rangeHeader: request.headers.get('range') });
 }
 
-function registerHandlers({ rendererRoot, getPaths, store }) {
-  if (!protocol || typeof protocol.handle !== 'function') {
+// Context captured once at startup so late-arriving sessions (per-game
+// webview partitions) can be given handlers on demand.
+let handlerCtx = null;
+
+function setHandlerContext(ctx) {
+  handlerCtx = ctx;
+}
+
+/**
+ * Register both scheme handlers on one session's Protocol object.
+ * Idempotent (protocol.handle replaces) and never throws — returns success.
+ */
+function ensureSessionHandlers(ses) {
+  try {
+    const proto = ses && ses.protocol ? ses.protocol : null;
+    if (!proto || typeof proto.handle !== 'function') return false;
+    if (!handlerCtx) return false;
+    const { rendererRoot, getPaths, store } = handlerCtx;
+    // Electron's protocol.handle passes (request) only.
+    proto.handle(APP_SCHEME, (request) => {
+      try {
+        return handleApp(rendererRoot, request);
+      } catch (err) {
+        log.error('app protocol error', String(err));
+        return new Response('Internal error', { status: 500 });
+      }
+    });
+    proto.handle(GAME_SCHEME, (request) => {
+      try {
+        return handleGame(getPaths, store, request);
+      } catch (err) {
+        log.error('game protocol error', String(err));
+        return new Response('Internal error', { status: 500 });
+      }
+    });
+    return true;
+  } catch (err) {
+    log.warn('session protocol registration failed', String(err));
+    return false;
+  }
+}
+
+function registerHandlers({ rendererRoot, getPaths, store, sessions = [] }) {
+  setHandlerContext({ rendererRoot, getPaths, store });
+  let ok = 0;
+  for (const ses of sessions) {
+    if (ensureSessionHandlers(ses)) ok++;
+  }
+  if (!ok) {
     throw new Error('protocol API unavailable — cannot serve the app UI.');
   }
-  // Electron's protocol.handle passes (request) only.
-  protocol.handle(APP_SCHEME, (request) => {
-    try {
-      return handleApp(rendererRoot, request);
-    } catch (err) {
-      log.error('app protocol error', String(err));
-      return new Response('Internal error', { status: 500 });
-    }
-  });
-  protocol.handle(GAME_SCHEME, (request) => {
-    try {
-      return handleGame(getPaths, store, request);
-    } catch (err) {
-      log.error('game protocol error', String(err));
-      return new Response('Internal error', { status: 500 });
-    }
-  });
-  log.info('protocol handlers registered');
+  log.info(`protocol handlers registered on ${ok} session(s)`);
 }
 
 /**
@@ -185,17 +219,26 @@ function registerHandlers({ rendererRoot, getPaths, store }) {
  * registration) makes Chromium treat our URLs as unknown schemes and hand
  * them to Windows — the infamous "get an app to open this link" dialog.
  * Resolves true when safe to load windows, false after timeout.
+ * NOTE: sessions must be the ones windows actually run on — checking the
+ * default session alone is useless when windows use custom partitions.
  */
-async function ensureProtocolsHandled({ timeoutMs = 5000 } = {}) {
-  if (!protocol || typeof protocol.isProtocolHandled !== 'function') return false;
+async function ensureProtocolsHandled({ sessions = [], timeoutMs = 5000 } = {}) {
+  const protos = sessions
+    .map((s) => (s && s.protocol ? s.protocol : null))
+    .filter((pr) => pr && typeof pr.isProtocolHandled === 'function');
+  if (!protos.length) {
+    // Fallback: top-level module (default session) when no sessions given.
+    if (protocol && typeof protocol.isProtocolHandled === 'function') protos.push(protocol);
+    else return false;
+  }
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     try {
-      const [app, game] = await Promise.all([
-        protocol.isProtocolHandled(APP_SCHEME),
-        protocol.isProtocolHandled(GAME_SCHEME),
-      ]);
-      if (app && game) return true;
+      const checks = [];
+      for (const pr of protos) {
+        checks.push(pr.isProtocolHandled(APP_SCHEME), pr.isProtocolHandled(GAME_SCHEME));
+      }
+      if ((await Promise.all(checks)).every(Boolean)) return true;
     } catch (err) {
       log.warn('protocol check failed', String(err));
     }
@@ -205,6 +248,7 @@ async function ensureProtocolsHandled({ timeoutMs = 5000 } = {}) {
 }
 
 module.exports = {
-  APP_SCHEME, GAME_SCHEME, registerSchemes, registerHandlers,
+  APP_SCHEME, GAME_SCHEME, SHELL_PARTITION, registerSchemes, registerHandlers,
+  ensureSessionHandlers, setHandlerContext,
   ensureProtocolsHandled, serveFile, handleApp, handleGame,
 };

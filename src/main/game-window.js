@@ -15,7 +15,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const { BrowserWindow, session, shell, ipcMain, app, dialog } = require('electron');
-const { GAME_SCHEME, APP_SCHEME } = require('./protocol');
+const { GAME_SCHEME, APP_SCHEME, SHELL_PARTITION, ensureSessionHandlers } = require('./protocol');
 const { isSafeExternalUrl } = require('./util');
 const { scope } = require('./log');
 
@@ -29,6 +29,10 @@ function partitionFor(gameId) {
 
 function applyNetworkPolicy(gameId, blockNetwork) {
   const ses = session.fromPartition(partitionFor(gameId));
+  // The per-game webview session needs its own protocol handlers (sessions
+  // never inherit them) — otherwise game pages punt to Windows as unknown
+  // links. The web-contents-created hook in main.js is a second net.
+  ensureSessionHandlers(ses);
   // Clear previous handler by setting a no-op filter first is not supported;
   // instead we always (re)register and branch on the flag via closure map.
   policyFlags.set(gameId, !!blockNetwork);
@@ -81,7 +85,7 @@ function createGameWindow({ store, paths, gameId, options = {} }) {
       nodeIntegration: false,
       sandbox: true,
       webviewTag: true,
-      partition: 'persist:playhub-shell',
+      partition: SHELL_PARTITION,
     },
   });
 

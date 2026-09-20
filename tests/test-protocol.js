@@ -99,3 +99,80 @@ describe('protocol handleGame', () => {
     assert.equal(proto.handleGame(getPaths, store, fakeRequest('playhub-game://game/nope/index.html')).status, 404);
   });
 });
+
+function fakeSession() {
+  const handlers = new Map();
+  return {
+    handlers,
+    protocol: {
+      handle: (scheme, fn) => { handlers.set(scheme, fn); },
+      isProtocolHandled: async (scheme) => handlers.has(scheme),
+    },
+  };
+}
+
+describe('protocol multi-session registration', () => {
+  let root;
+  let games;
+  const store = {
+    getGame: (id) => (id === 'g1' ? { id: 'g1', entryFile: 'index.html' } : null),
+  };
+  before(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'ph-sesapp-'));
+    fs.writeFileSync(path.join(root, 'index.html'), '<!doctype html>SHELL');
+    games = fs.mkdtempSync(path.join(os.tmpdir(), 'ph-sesgames-'));
+    fs.mkdirSync(path.join(games, 'g1'), { recursive: true });
+    fs.writeFileSync(path.join(games, 'g1', 'index.html'), '<!doctype html>GAME1');
+    proto.setHandlerContext({ rendererRoot: root, getPaths: () => ({ games }), store });
+  });
+  after(() => {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(games, { recursive: true, force: true });
+    proto.setHandlerContext(null);
+  });
+
+  it('registers both schemes on every session given (the partition bug)', () => {
+    const def = fakeSession();
+    const shell = fakeSession();
+    const game = fakeSession();
+    proto.registerHandlers({
+      rendererRoot: root, getPaths: () => ({ games }), store,
+      sessions: [def, shell, game],
+    });
+    for (const ses of [def, shell, game]) {
+      assert.ok(ses.handlers.has('playhub-app'), 'app scheme missing on a session');
+      assert.ok(ses.handlers.has('playhub-game'), 'game scheme missing on a session');
+    }
+  });
+
+  it('session handlers actually serve responses', async () => {
+    const ses = fakeSession();
+    assert.equal(proto.ensureSessionHandlers(ses), true);
+    const appRes = await ses.handlers.get('playhub-app')(fakeRequest('playhub-app://app/index.html'));
+    assert.equal(appRes.status, 200);
+    assert.match(await appRes.text(), /SHELL/);
+    const gameRes = await ses.handlers.get('playhub-game')(fakeRequest('playhub-game://game/g1/index.html'));
+    assert.equal(gameRes.status, 200);
+    assert.match(await gameRes.text(), /GAME1/);
+  });
+
+  it('gate passes only when every session handles both schemes', async () => {
+    const good = fakeSession();
+    proto.ensureSessionHandlers(good);
+    assert.equal(await proto.ensureProtocolsHandled({ sessions: [good], timeoutMs: 200 }), true);
+    const bad = fakeSession(); // nothing registered
+    assert.equal(await proto.ensureProtocolsHandled({ sessions: [good, bad], timeoutMs: 200 }), false);
+  });
+
+  it('ensureSessionHandlers never throws on garbage', () => {
+    assert.equal(proto.ensureSessionHandlers(null), false);
+    assert.equal(proto.ensureSessionHandlers({}), false);
+    assert.equal(proto.ensureSessionHandlers({ protocol: {} }), false);
+  });
+
+  it('registerHandlers throws when no session could take handlers', () => {
+    assert.throws(() => proto.registerHandlers({
+      rendererRoot: root, getPaths: () => ({ games }), store, sessions: [],
+    }), /protocol API unavailable/);
+  });
+});

@@ -4,9 +4,9 @@
  */
 const path = require('node:path');
 const fs = require('node:fs');
-const { app, BrowserWindow, ipcMain, dialog, shell, net } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, net, session } = require('electron');
 
-const { registerSchemes, registerHandlers, ensureProtocolsHandled, APP_SCHEME } = require('./protocol');
+const { registerSchemes, registerHandlers, ensureSessionHandlers, ensureProtocolsHandled, APP_SCHEME, SHELL_PARTITION } = require('./protocol');
 const pathsMod = require('./paths');
 const { Store } = require('./store');
 const { init: initLog, scope, tailLines } = require('./log');
@@ -48,7 +48,7 @@ function createMainWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      partition: 'persist:playhub-shell',
+      partition: SHELL_PARTITION,
     },
   });
   setMainWindow(mainWindow);
@@ -703,14 +703,28 @@ app.whenReady().then(async () => {
     store = new Store(paths).load();
     store.ensureBuiltinCollections();
 
-    registerHandlers({ rendererRoot: rendererRoot(), getPaths: () => paths, store });
+    // Handlers must live on every session windows run on: the default one
+    // plus our shell partition. (Custom partitions do NOT inherit the
+    // default session's handlers — missing ones make Chromium punt our own
+    // URLs to Windows: "get an app to open this link".)
+    const appSessions = [session.defaultSession, session.fromPartition(SHELL_PARTITION)];
+    registerHandlers({ rendererRoot: rendererRoot(), getPaths: () => paths, store, sessions: appSessions });
     require('./game-window').registerGameIpc({ store, paths });
     registerIpc();
 
+    // Safety net: any late-arriving session (per-game webview partitions are
+    // created on demand) gets handlers the moment its first contents exist —
+    // before any navigation can reach it.
+    app.on('web-contents-created', (_e, contents) => {
+      try {
+        if (contents && contents.session) ensureSessionHandlers(contents.session);
+      } catch { /* never break window creation */ }
+    });
+
     // Never load a window before the playhub-* schemes are verifiably
-    // handled — otherwise Chromium hands our own URLs to Windows
-    // ("get an app to open this link").
-    const protocolsOk = await ensureProtocolsHandled({ timeoutMs: 8000 });
+    // handled on the sessions above — otherwise Chromium hands our own URLs
+    // to Windows ("get an app to open this link").
+    const protocolsOk = await ensureProtocolsHandled({ sessions: appSessions, timeoutMs: 8000 });
     if (!protocolsOk) {
       log.error('protocol schemes not handled; refusing to load windows');
       dialog.showErrorBox('HTML Playhub failed to start',
