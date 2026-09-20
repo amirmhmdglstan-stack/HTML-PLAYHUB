@@ -45,9 +45,29 @@ jobs:
       - name: Audit games
         run: node tools/audit-games.mjs
       - name: Build Windows installers
-        run: npx electron-builder --win
+        shell: pwsh
+        run: |
+          node --version
+          npx electron-builder --version
+          $ErrorActionPreference = 'Continue'
+          npx electron-builder --win 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output '--- build.log tail (also emitted as error annotation) ---'
+            Get-Content build.log -Tail 15
+            $tail = ((Get-Content build.log -Tail 12) -join "`n") -replace '%','%25' -replace "`r",'%0D' -replace "`n",'%0A'
+            $tail = $tail.Substring(0, [Math]::Min($tail.Length, 3000))
+            Write-Output "::error::electron-builder failed: $tail"
+            exit 1
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
       - name: Checksums
         shell: bash
         run: |
