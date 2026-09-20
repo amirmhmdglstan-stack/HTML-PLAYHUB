@@ -57,14 +57,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "HTML Playhub",
-      "artifactName": "${productName}-${version}-Setup.${ext}",
-      "fileAssociations": [
-        {
-          "ext": "html",
-          "name": "HTML Game",
-          "description": "Import into HTML Playhub"
-        }
-      ]
+      "artifactName": "${productName}-${version}-Setup.${ext}"
     },
     "portable": {
       "artifactName": "${productName}-${version}-Portable.${ext}"
