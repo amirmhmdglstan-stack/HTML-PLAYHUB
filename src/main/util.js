@@ -171,8 +171,25 @@ function uniqueId(prefix = 'id') {
   return `${prefix}-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
 }
 
+/**
+ * True only for well-formed http(s) URLs. Everything else — custom schemes
+ * (including our own playhub-*), file paths, javascript:, data:, blanks —
+ * must never reach the OS shell.
+ */
+function isSafeExternalUrl(u) {
+  if (typeof u !== 'string') return false;
+  const s = u.trim();
+  if (!s || s.length > 2048) return false;
+  if (/[\s<>"'\\]/.test(s)) return false;
+  let parsed = null;
+  try { parsed = new URL(s); } catch { return false; }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+  if (!parsed.hostname) return false;
+  return true;
+}
+
 module.exports = {
   slugify, titleize, formatBytes, formatDuration, formatDate,
   mimeFor, safeJoin, sha256File, sha256String, atomicWriteFileSync,
-  walkFiles, isHtmlFile, isImageFile, clamp, uniqueId,
+  walkFiles, isHtmlFile, isImageFile, clamp, uniqueId, isSafeExternalUrl,
 };

@@ -120,12 +120,19 @@ export async function renderSettings(root, nav, section = null) {
     if (!r.ok) { upLabel.textContent = `Check failed: ${r.error || 'offline?'}`; return; }
     if (r.available) {
       upLabel.innerHTML = '';
-      upLabel.append(`Update available: v${r.latest} (you have v${r.current}). `, el('span', { class: 'mono small' }, r.url));
+      upLabel.append(`Update available: v${r.latest} (you have v${r.current}).`);
+      btnGo.hidden = false;
+      btnGo.dataset.url = r.url;
       toast(`Update v${r.latest} available — see Settings → Updates.`, 'warn');
       showUpdateDot(r);
-    } else upLabel.textContent = `You're up to date (v${r.current}).`;
+    } else {
+      upLabel.textContent = `You're up to date (v${r.current}).`;
+      btnGo.hidden = true;
+    }
   } }, 'Check now');
-  up.append(el('div', { class: 'toolbar-row' }, btnUp), upLabel);
+  const btnGo = el('button', { class: 'btn sm', hidden: 'hidden' }, '↗ Open release page');
+  btnGo.onclick = () => api.openExternal(btnGo.dataset.url).catch((e) => toast(`Could not open browser: ${e.message}`, 'bad'));
+  up.append(el('div', { class: 'toolbar-row' }, btnUp), upLabel, el('p', { class: 'small' }, btnGo));
   try {
     const info = await api.appInfo();
     up.append(el('p', { class: 'small muted' }, `Playhub v${info.version} · Electron ${info.electron} · Chrome ${info.chrome}`));
@@ -145,7 +152,7 @@ export async function renderSettings(root, nav, section = null) {
   // ---- about ----
   const ab = el('div', { class: 'panel' }, el('h3', { text: 'ℹ About' }));
   ab.append(el('p', { class: 'small' }, 'HTML Playhub — a local-first library & launcher for offline HTML games. No accounts, no analytics, no uploads. Your games, saves and screenshots never leave this computer unless you export them.'));
-  ab.append(el('p', { class: 'small muted' }, 'Launcher: MIT License. Bundled games keep their own licenses — see each game page.'));
+  ab.append(el('p', { class: 'small muted' }, 'Launcher: MIT License. Catalog games keep their own licenses — see each game page.'));
   grid.append(ab);
 
   async function set(patch) {

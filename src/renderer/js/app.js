@@ -283,6 +283,12 @@ async function boot() {
       }
     }).catch(() => {});
   }
+  // Optional startup catalog refresh (off by default; never blocks).
+  if (window.__settings.checkCatalogUpdates) {
+    api.catalogRefresh().then((r) => {
+      if (r && Array.isArray(r.games)) toast(`Catalog updated (${r.games.length} entries).`, 'good');
+    }).catch(() => {});
+  }
   // Library integrity: passive check, surfaced only if broken games exist.
   api.integrity().then((r) => {
     if (r && !r.ok && r.issues.length) {

@@ -58,4 +58,31 @@ describe('util', () => {
     assert.equal(totalBytes, 100);
     fs.rmSync(dir, { recursive: true, force: true });
   });
+
+  it('isSafeExternalUrl allows only well-formed web URLs', () => {
+    const ok = [
+      'https://example.com/x',
+      'http://a.b/c?d=e#f',
+      'https://example.com:8080/',
+      'HTTPS://EXAMPLE.COM/',
+    ];
+    for (const u of ok) assert.equal(util.isSafeExternalUrl(u), true, u);
+    const bad = [
+      'playhub-app://app/index.html',
+      'playhub-game://game/x/y.html',
+      'file:///C:/x.html',
+      'javascript:alert(1)',
+      'data:text/html,x',
+      'https://a.com/evil"x',
+      'https://a.com/a b',
+      'https://',
+      '',
+      '   ',
+      null,
+      undefined,
+      42,
+      'https://x'.padEnd(3000, 'a'),
+    ];
+    for (const u of bad) assert.equal(util.isSafeExternalUrl(u), false, String(u));
+  });
 });

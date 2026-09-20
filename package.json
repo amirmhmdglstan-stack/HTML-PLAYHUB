@@ -1,7 +1,7 @@
 {
   "name": "html-playhub",
   "productName": "HTML Playhub",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A Steam-style offline library and launcher for HTML/web games.",
   "author": "HTML Playhub Contributors",
   "license": "MIT",
@@ -57,10 +57,13 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "HTML Playhub",
-      "artifactName": "HTML-Playhub-${version}-Setup.${ext}"
+      "artifactName": "HTML-Playhub-${version}-Setup.${ext}",
+      "differentialPackage": false
     },
     "portable": {
       "artifactName": "HTML-Playhub-${version}-Portable.${ext}"
-    }
+    },
+    "compression": "maximum",
+    "afterPack": "tools/after-pack.js"
   }
 }

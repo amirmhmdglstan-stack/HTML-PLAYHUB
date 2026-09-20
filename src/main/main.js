@@ -6,11 +6,11 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { app, BrowserWindow, ipcMain, dialog, shell, net } = require('electron');
 
-const { registerSchemes, registerHandlers, APP_SCHEME } = require('./protocol');
+const { registerSchemes, registerHandlers, ensureProtocolsHandled, APP_SCHEME } = require('./protocol');
 const pathsMod = require('./paths');
 const { Store } = require('./store');
 const { init: initLog, scope, tailLines } = require('./log');
-const { formatBytes } = require('./util');
+const { formatBytes, isSafeExternalUrl } = require('./util');
 
 const log = scope('main');
 const DEV = process.argv.includes('--dev');
@@ -56,8 +56,34 @@ function createMainWindow() {
   mainWindow.once('ready-to-show', () => mainWindow.show());
   if (DEV) mainWindow.webContents.openDevTools({ mode: 'detach' });
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//i.test(url)) shell.openExternal(url).catch(() => {});
+    if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
     return { action: 'deny' };
+  });
+  // Top-frame navigation lockdown: our UI stays in-app, web links go to the
+  // OS browser, and anything else (custom schemes included) is denied so it
+  // can never leak to Windows as an "open this link" prompt.
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    if (url.startsWith(`${APP_SCHEME}://app/`)) return;
+    e.preventDefault();
+    if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
+    else log.warn('blocked main-window navigation to', String(url).slice(0, 160));
+  });
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url, isMainFrame) => {
+    if (!isMainFrame || code === -3) return; // ignore subframes + aborts
+    log.error('main window failed to load', `${code} ${desc} ${url}`);
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (!mainWindow.isVisible()) mainWindow.show();
+    dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      title: 'HTML Playhub failed to start its interface',
+      message: 'The library window could not load.',
+      detail: `Error ${code}: ${desc}\nURL: ${url}\n\nYour games, saves and settings are untouched. A log was written — Settings → Advanced → View logs (or the logs folder next to your data).`,
+      buttons: ['Reload', 'Quit'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0 && mainWindow && !mainWindow.isDestroyed()) mainWindow.reload();
+      else app.quit();
+    }).catch(() => {});
   });
   mainWindow.webContents.on('render-process-gone', (_e, details) => {
     log.error('main window renderer gone', `${details.reason} (exit ${details.exitCode})`);
@@ -603,9 +629,9 @@ function registerIpc() {
   // ----- external links (validated) -----
   ipcMain.handle('shell:open-external', async (_e, url) => {
     const u = String(url || '');
-    if (!/^https:\/\/[a-z0-9][a-z0-9.-]*[a-z0-9](:\d+)?(\/|$|\?|#)/i.test(u) && !/^https:\/\/[a-z0-9-]+$/i.test(u)) {
-      // Allow http too, but only well-formed web URLs.
-      if (!/^https?:\/\/[^\s<>"']+$/i.test(u)) throw new Error('Blocked URL.');
+    if (!isSafeExternalUrl(u)) {
+      log.warn('blocked shell:open-external for non-web URL', u.slice(0, 160));
+      throw new Error('Blocked URL.');
     }
     await shell.openExternal(u);
     return true;
@@ -667,21 +693,33 @@ app.on('second-instance', (_e, argv) => {
   else if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.focus(); }
 });
 
-app.whenReady().then(() => {
-  paths = pathsMod.ensureDirs();
-  initLog(paths.logs);
-  log.info(`starting HTML Playhub v${app.getVersion()} (portable=${paths.portable})`);
-  log.info(`data root: ${paths.root}`);
+app.whenReady().then(async () => {
+  try {
+    paths = pathsMod.ensureDirs();
+    initLog(paths.logs);
+    log.info(`starting HTML Playhub v${app.getVersion()} (portable=${paths.portable})`);
+    log.info(`data root: ${paths.root}`);
 
-  store = new Store(paths).load();
-  store.ensureBuiltinCollections();
+    store = new Store(paths).load();
+    store.ensureBuiltinCollections();
 
-  registerHandlers({ rendererRoot: rendererRoot(), getPaths: () => paths, store });
-  require('./game-window').registerGameIpc({ store, paths });
-  registerIpc();
+    registerHandlers({ rendererRoot: rendererRoot(), getPaths: () => paths, store });
+    require('./game-window').registerGameIpc({ store, paths });
+    registerIpc();
 
+    // Never load a window before the playhub-* schemes are verifiably
+    // handled — otherwise Chromium hands our own URLs to Windows
+    // ("get an app to open this link").
+    const protocolsOk = await ensureProtocolsHandled({ timeoutMs: 8000 });
+    if (!protocolsOk) {
+      log.error('protocol schemes not handled; refusing to load windows');
+      dialog.showErrorBox('HTML Playhub failed to start',
+        'The app could not register its internal page handler.\n\nPlease restart the app. If this keeps happening, reinstall from the latest Setup.exe — your games and saves are stored separately and are safe.');
+      app.quit();
+      return;
+    }
 
-  createMainWindow();
+    createMainWindow();
 
   // File association / open-with: Windows passes the path as argv.
   const openFile = process.argv.slice(1).find((a) => !a.startsWith('-') && /\.(html?|zip)$/i.test(a));
@@ -692,6 +730,14 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
+  } catch (err) {
+    try { log.error('fatal startup error', String((err && err.stack) || err)); } catch { /* ignore */ }
+    try {
+      dialog.showErrorBox('HTML Playhub failed to start',
+        `Something went wrong during startup:\n${(err && err.message) || err}\n\nYour games and saves are stored separately and are safe.`);
+    } catch { /* ignore */ }
+    app.quit();
+  }
 });
 
 app.on('window-all-closed', () => {

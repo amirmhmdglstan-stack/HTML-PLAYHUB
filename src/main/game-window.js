@@ -14,8 +14,9 @@
  */
 const path = require('node:path');
 const fs = require('node:fs');
-const { BrowserWindow, session, shell, ipcMain, app, webContents } = require('electron');
+const { BrowserWindow, session, shell, ipcMain, app, dialog } = require('electron');
 const { GAME_SCHEME, APP_SCHEME } = require('./protocol');
+const { isSafeExternalUrl } = require('./util');
 const { scope } = require('./log');
 
 const log = scope('game-window');
@@ -130,11 +131,35 @@ function createGameWindow({ store, paths, gameId, options = {} }) {
   });
   win.webContents.setWindowOpenHandler(({ url }) => {
     // Links clicked in OUR chrome: external -> OS browser.
-    if (/^https?:\/\//i.test(url)) {
-      shell.openExternal(url).catch(() => {});
-      return { action: 'deny' };
-    }
+    if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
     return { action: 'deny' };
+  });
+  // Same navigation lockdown as the launcher: our chrome stays in-app, web
+  // links go to the OS browser, everything else is denied (never leaks to
+  // Windows as an "open this link" prompt).
+  win.webContents.on('will-navigate', (e, url) => {
+    if (url.startsWith(`${APP_SCHEME}://app/`)) return;
+    e.preventDefault();
+    if (isSafeExternalUrl(url)) shell.openExternal(url).catch(() => {});
+    else log.warn('blocked player-window navigation to', String(url).slice(0, 160));
+  });
+  win.webContents.on('did-fail-load', (_e, code, desc, url, isMainFrame) => {
+    if (!isMainFrame || code === -3) return;
+    log.error(`[${gameId}] player chrome failed to load`, `${code} ${desc} ${url}`);
+    if (win.isDestroyed()) return;
+    if (!win.isVisible()) win.show();
+    dialog.showMessageBox(win, {
+      type: 'error',
+      title: 'Game player failed to load',
+      message: `The player window for “${rec.title}” could not load.`,
+      detail: `Error ${code}: ${desc}\n\nYour games and saves are untouched. Try closing this window and playing again.`,
+      buttons: ['Reload player', 'Close'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (win.isDestroyed()) return;
+      if (response === 0) win.reload();
+      else win.close();
+    }).catch(() => {});
   });
 
   log.info(`[${gameId}] player window created`);
