@@ -17,8 +17,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
-const ROOT = '/home/user/HTML-PLAYHUB';
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pathsMod = require(`${ROOT}/src/main/paths.js`);
 const { Store } = require(`${ROOT}/src/main/store.js`);
 const importer = require(`${ROOT}/src/main/importer.js`);
