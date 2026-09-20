@@ -7,7 +7,7 @@ over a custom protocol.
 
 ```text
 ┌─ Main process (Node, src/main/) ────────────────┐
-│ main.js      lifecycle, windows, IPC, seeding   │
+│ main.js      lifecycle, windows, IPC, installs │
 │ games.js     install/uninstall/integrity        │
 │ importer.js  analyze + install pipeline         │
 │ doctor.js    static compatibility analysis      │
@@ -50,7 +50,7 @@ over a custom protocol.
 - **Static analysis, never execution.** The doctor/importer only read files as
   text (resource-host detection, input/storage/tech hints, entry scoring).
 - **Privacy by construction.** Trackers detected → Offline Sandbox suggested
-  (auto-enabled for bundled games with trackers). Network policy enforced per
+  (auto-enabled for installed games with trackers). Network policy enforced per
   partition via `webRequest.onBeforeRequest`.
 - **Virtual controls via input injection.** Overlay buttons/joystick/touchpad in
   the player window call `webview.sendInputEvent` (keyDown/keyUp/mouse*).
@@ -83,7 +83,7 @@ Preloads expose allow-listed channels only (`main-preload.js`,
 
 - New compatibility rule → `src/main/doctor.js` (+ tests in `tests/`).
 - New control preset → `CONTROL_PRESETS` in `src/renderer/js/controls.js`.
-- New game source → `tools/bundle-sources.json` + fetch/catalog/attribution/audit.
+- New game source → `tools/catalog-sources.json` + catalog/attribution/audit (see DEVELOPMENT).
 - New setting → `DEFAULT_SETTINGS` (`store.js`) + UI in `view-settings.js` +
   apply in `app.js` `applySettings()`.
 - New view → `src/renderer/js/view-*.js` + route in `app.js` nav.

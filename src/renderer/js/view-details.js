@@ -51,11 +51,6 @@ export async function renderDetails(root, nav, gameId) {
       `This game is broken: entry file “${game.entryFile}” is missing. `,
       el('button', { class: 'link-btn', onclick: () => tabDoctor(body, game) }, 'Run Game Doctor →')));
   }
-  if (game.updateAvailable) {
-    root.append(el('div', { class: 'note-box' },
-      `A newer bundled version is available. Your saves and stats are preserved on update. `,
-      el('button', { class: 'link-btn', onclick: () => toast('Bundle updates arrive with Playhub updates.', '') }, 'How updates work')));
-  }
 
   const tabs = el('div', { class: 'tabs' });
   const body = el('div', {});

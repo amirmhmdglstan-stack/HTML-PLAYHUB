@@ -204,7 +204,8 @@ async function maybeFirstRun() {
     el('div', { class: 'setup-hero' },
       el('div', { class: 'big' }, '🎮'),
       el('h2', { text: 'Welcome to HTML Playhub' }),
-      el('p', { class: 'muted' }, `${library.games.length} bundled game(s) are ready. Pick a theme — everything else just works.`)),
+      el('p', { class: 'muted' }, 'Your library starts empty. Import your own games or install 600+ free games from Discover. Pick a theme — everything else just works.')),
+
     themes,
     el('div', { class: 'note-box' },
       el('b', { text: 'Where games live: ' }),

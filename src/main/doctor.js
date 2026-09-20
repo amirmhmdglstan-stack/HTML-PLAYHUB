@@ -4,7 +4,7 @@
  *
  * Pure functions (no Electron) so the same engine is used by:
  *  - the main process (import wizard, game doctor view)
- *  - tools/audit-games.mjs (CI report over bundled games)
+ *  - tools/build-catalog.mjs (analyzes every cataloged game file)
  *  - tests/
  *
  * Nothing here executes game code. It only reads files as text.

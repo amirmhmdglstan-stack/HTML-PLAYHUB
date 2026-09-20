@@ -1,6 +1,6 @@
 'use strict';
 /**
- * games.js — installed-game management: install, uninstall, integrity, seed.
+ * games.js — installed-game management: install, uninstall, integrity.
  */
 const fs = require('node:fs');
 const path = require('node:path');

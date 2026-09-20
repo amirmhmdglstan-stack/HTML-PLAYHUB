@@ -12,7 +12,7 @@ export async function renderDiscover(root, nav) {
   root.innerHTML = '';
   root.append(el('div', { class: 'view-head' },
     el('h1', { text: 'Discover' }),
-    el('span', { class: 'sub', text: 'Curated, legally-checked games you can install with one click.' })));
+    el('span', { class: 'sub', text: 'Every game is a direct download from its original source — installed straight into your library.' })));
 
   const bar = el('div', { class: 'toolbar-row' });
   const search = el('input', { class: 'text-input', placeholder: 'Filter catalog…', style: 'max-width:320px', value: query });
@@ -55,14 +55,14 @@ export async function renderDiscover(root, nav) {
 
     if (installable.length) {
       lists.append(el('div', { class: 'src-group' },
-        el('div', { class: 'src-head' }, el('h2', { text: '⬇ Installable' }), el('p', { text: 'One click to download & install. Licenses verified.' }))));
+        el('div', { class: 'src-head' }, el('h2', { text: '⬇ Installable' }), el('p', { text: 'One click: the game file downloads and installs straight into your library. Nothing is preinstalled.' }))));
       const grid = el('div', { class: 'grid compact' });
       lists.append(grid);
       pagedList(grid, installable, (g) => catalogCard(g, nav, false));
     }
     if (external.length) {
       lists.append(el('div', { class: 'src-group' },
-        el('div', { class: 'src-head' }, el('h2', { text: '🔗 External sources' }), el('p', { text: 'Not bundled for license reasons — visit the source, then import what you legally obtain.' }))));
+        el('div', { class: 'src-head' }, el('h2', { text: '🔗 External sources' }), el('p', { text: 'Visit the source in your browser, then import what you legally obtain.' }))));
       const grid = el('div', { class: 'grid compact' });
       lists.append(grid);
       pagedList(grid, external, (g) => catalogCard(g, nav, true));
@@ -83,7 +83,7 @@ function catalogCard(g, nav, isExternal) {
   art.append(el('div', { class: 'fallback', style: `background:${fallbackGradient(g.id)}` }, el('span', { text: (g.title || '?').slice(0, 2).toUpperCase() })));
   const badges = el('div', { class: 'card-badges' });
   if (g.offline === false) badges.append(el('span', { class: 'badge yellow' }, 'Online'));
-  else if (!isExternal) badges.append(el('span', { class: 'badge green' }, 'Offline'));
+  else if (g.offline === true && !isExternal) badges.append(el('span', { class: 'badge green' }, 'Offline'));
   if (g.qualityTier) badges.append(el('span', { class: 'badge blue' }, `Tier ${g.qualityTier}`));
   art.append(badges);
   card.append(art, el('div', { class: 'card-body' },
@@ -116,8 +116,9 @@ function catalogDetails(g, nav, isExternal) {
       licenseBadge(g.license),
       ...(g.genres || []).map((x) => el('span', { class: 'badge accent' }, x)),
       g.size ? el('span', { class: 'badge' }, formatBytes(g.size)) : null,
-      g.offline === false ? el('span', { class: 'badge yellow' }, 'Needs internet') : el('span', { class: 'badge green' }, 'Offline capable')),
+      g.offline === false ? el('span', { class: 'badge yellow' }, 'Needs internet') : g.offline === true ? el('span', { class: 'badge green' }, 'Offline capable') : el('span', { class: 'badge' }, 'Connectivity unknown')),
     g.whyExternal ? el('div', { class: 'warn-box' }, g.whyExternal) : null,
+    g.licenseNote ? el('div', { class: 'warn-box' }, g.licenseNote) : null,
     g.homepage ? el('p', { class: 'small' }, el('span', { class: 'muted' }, 'Source: '), el('span', { class: 'mono' }, g.homepage)) : null,
     el('div', { class: 'progress', id: 'dl-progress', hidden: true }, el('i', { style: 'width:0%' })),
     el('p', { class: 'small muted', id: 'dl-label', hidden: true }));

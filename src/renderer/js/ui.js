@@ -94,7 +94,6 @@ export function gameCard(game, { onOpen, onPlay, onFav, compact = false } = {}) 
   if (!game.entryExists) badges.append(el('span', { class: 'badge red', title: 'Entry file is missing' }, 'Broken'));
   else if (game.network && game.network.required) badges.append(el('span', { class: 'badge yellow', title: 'Needs internet (external resources)' }, 'Online'));
   else badges.append(el('span', { class: 'badge green', title: 'Fully offline capable' }, 'Offline'));
-  if (game.updateAvailable) badges.append(el('span', { class: 'badge blue' }, 'Update'));
   const play = el('button', { class: 'card-play', 'aria-label': `Play ${game.title}`, onclick: (e) => { e.stopPropagation(); onPlay(game); } },
     el('i', {}, '▶ Play'));
   art.append(badges, fav, play);

@@ -104,7 +104,9 @@ async function stageSource(paths, source, onProgress = null) {
     if (source.kind === 'url') {
       const url = String(source.url || '').trim();
       if (!/^https?:\/\//i.test(url)) throw new Error('Only http(s) URLs can be imported.');
-      const dlDir = path.join(paths.downloads, `import-${Date.now().toString(36)}`);
+      // Downloads stage inside temp: an install never leaves files in any
+      // downloads folder — the game lands in the library or nowhere.
+      const dlDir = path.join(staging, '__dl');
       fs.mkdirSync(dlDir, { recursive: true });
       const isZip = /\.zip(\?|$)/i.test(url) || /\/archive\/|\/releases\/download\//i.test(url);
       const destFile = path.join(dlDir, isZip ? 'game.zip' : 'game.html');
@@ -284,7 +286,40 @@ async function importFromSource({ paths, store, source, manifestOverrides = {}, 
   }
 }
 
+/** Validate a catalog asset path: relative, forward-slash, stays inside the game. */
+function assertSafeRelPath(rel) {
+  if (typeof rel !== 'string' || !rel || rel.length > 300) throw new Error('Invalid asset path.');
+  if (rel.includes('\\') || path.isAbsolute(rel) || /^[a-zA-Z]:/.test(rel)) throw new Error(`Unsafe asset path: ${rel}`);
+  const parts = rel.split('/');
+  if (!parts.length || parts.some((p) => !p || p === '.' || p === '..')) throw new Error(`Unsafe asset path: ${rel}`);
+  return parts;
+}
+
+/**
+ * Stage an entry file + its catalog assets into a temp dir, preserving the
+ * repo-relative layout (entry at <rel>, assets at their paths) so relative
+ * references keep working. `files`: [{ rel, src }] with local src paths.
+ */
+function stageFileTree(paths, files) {
+  const staging = newStagingDir(paths.temp);
+  try {
+    for (const f of files) {
+      const parts = assertSafeRelPath(f.rel);
+      if (!f.src || !fs.existsSync(f.src)) throw new Error(`Staged file missing: ${f.rel}`);
+      const target = safeJoin(staging, ...parts);
+      if (!target) throw new Error(`Unsafe asset path: ${f.rel}`);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(f.src, target);
+    }
+    return { root: staging, staging, cleanup: true, origin: 'download' };
+  } catch (err) {
+    cleanupStaging(staging);
+    throw err;
+  }
+}
+
 module.exports = {
   stageSource, cleanupStaging, extractZipSafe, analyzeRoot,
   summarizeCompatibility, importFromSource, guessGenres,
+  assertSafeRelPath, stageFileTree,
 };

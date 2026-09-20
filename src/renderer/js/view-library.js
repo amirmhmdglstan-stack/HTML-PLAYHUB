@@ -21,7 +21,6 @@ export const libraryState = {
   favoritesOnly: false,
   singleFileOnly: false,
   offlineOnly: false,
-  updatesOnly: false,
   sort: 'recently-added',
   mode: 'grid', // grid | list
 };
@@ -48,7 +47,6 @@ export function filterGames(games, st = libraryState) {
   }
   if (st.singleFileOnly) list = list.filter((g) => g.singleFile);
   if (st.offlineOnly) list = list.filter((g) => !(g.network && g.network.required));
-  if (st.updatesOnly) list = list.filter((g) => g.updateAvailable);
   if (st.query) list = list.filter((g) => matchesQuery(g, st.query));
 
   const by = {
@@ -141,7 +139,7 @@ export async function playGame(game, nav) {
 export function resetFilters() {
   Object.assign(libraryState, {
     query: '', genre: '', collectionId: '', favoritesOnly: false,
-    singleFileOnly: false, offlineOnly: false, updatesOnly: false,
+    singleFileOnly: false, offlineOnly: false,
   });
 }
 
@@ -168,7 +166,6 @@ export function renderFilterbar(nav) {
     }),
     chip('📄 Single-file', st.singleFileOnly, () => { st.singleFileOnly = !st.singleFileOnly; }, 'Games that are one self-contained file'),
     chip('📴 Offline', st.offlineOnly, () => { st.offlineOnly = !st.offlineOnly; }, 'Hide games that need internet'),
-    chip('⬆ Updates', st.updatesOnly, () => { st.updatesOnly = !st.updatesOnly; }, 'Games with a bundle update available'),
   );
 
   const genres = allGenres(library.games);

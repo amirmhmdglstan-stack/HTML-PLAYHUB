@@ -1,6 +1,6 @@
 'use strict';
 /**
- * main.js — application entry: lifecycle, windows, IPC, seeding, updates.
+ * main.js — application entry: lifecycle, windows, IPC, catalog installs, updates.
  */
 const path = require('node:path');
 const fs = require('node:fs');
@@ -72,62 +72,6 @@ function createMainWindow() {
     surprise: () => mainWindow.webContents.send('playhub:surprise'),
   });
   return mainWindow;
-}
-
-/** Seed bundled games on first run (and detect bundle updates later). */
-function seedBundledGames() {
-  const bundleRoot = path.join(pathsMod.resourceRoot(), 'bundled-games');
-  const bundleFile = path.join(bundleRoot, 'bundle.json');
-  if (!fs.existsSync(bundleFile)) {
-    log.info('no bundled games manifest; skipping seed');
-    return { installed: 0, skipped: 0 };
-  }
-  let bundle;
-  try { bundle = JSON.parse(fs.readFileSync(bundleFile, 'utf8')); } catch (err) {
-    log.warn('bundled games manifest unreadable', String(err));
-    return { installed: 0, skipped: 0 };
-  }
-  const { finalizeInstall } = require('./games');
-  const { MANIFEST_FILENAME, normalizeManifest } = require('./manifest');
-  let installed = 0, skipped = 0;
-  for (const entry of bundle.games || []) {
-    try {
-      if (store.getGame(entry.id)) {
-        // Bundle update detection (never auto-overwrites).
-        const rec = store.getGame(entry.id);
-        if ((entry.bundleVersion || 0) > (rec.bundleVersion || 0)) {
-          rec.updateAvailable = entry.bundleVersion;
-          store.upsertGame(rec);
-        }
-        skipped++;
-        continue;
-      }
-      const srcDir = path.join(bundleRoot, entry.dir || entry.id);
-      if (!fs.existsSync(srcDir)) { skipped++; continue; }
-      let manifest = null;
-      try { manifest = JSON.parse(fs.readFileSync(path.join(srcDir, MANIFEST_FILENAME), 'utf8')); } catch { /* importer defaults */ }
-      const thumb = ['thumb.png', 'thumb.jpg', 'thumbnail.png'].map((n) => path.join(srcDir, n)).find((p) => fs.existsSync(p)) || null;
-      const rec = finalizeInstall({
-        paths, store, stagingDir: srcDir, gameId: entry.id,
-        manifestOverrides: normalizeManifest({ ...(manifest || {}), id: entry.id }),
-        thumbnailSrc: thumb, origin: 'bundled', managed: true,
-      });
-      // Privacy default: sandboxed network for bundled games with trackers.
-      if (rec.network && rec.network.trackers && rec.network.trackers.length) {
-        rec.blockNetwork = true;
-        store.upsertGame(rec);
-        log.info(`[${entry.id}] trackers detected; Offline Sandbox enabled by default`);
-      }
-      installed++;
-    } catch (err) {
-      log.warn(`bundled game ${entry.id} failed to install`, String(err));
-      skipped++;
-    }
-  }
-  store.db.meta.bundleVersion = bundle.version || store.db.meta.bundleVersion;
-  store.saveSoon();
-  log.info(`bundled seed: ${installed} installed, ${skipped} skipped`);
-  return { installed, skipped };
 }
 
 function notifyLibraryChanged(reason, gameId = null) {
@@ -350,47 +294,78 @@ function registerIpc() {
   ipcMain.handle('catalog:get', () => catalog.getCatalog(paths));
   ipcMain.handle('catalog:refresh', async () => catalog.refreshCatalog(paths));
   ipcMain.handle('discover:install', async (event, entry) => {
-    // entry: { id, kind: 'file'|'zip', url, title, ... } — download then import.
-    const dlDir = path.join(paths.downloads, `discover-${Date.now().toString(36)}`);
-    fs.mkdirSync(dlDir, { recursive: true });
-    const destFile = path.join(dlDir, entry.kind === 'zip' ? 'game.zip' : 'game.html');
+    // entry: { id, kind: 'file'|'zip', url, assets?, title, ... }
+    // Downloads go to temp and are installed STRAIGHT into the library's
+    // game files — a Discover install never leaves anything in a downloads
+    // folder (there isn't one anymore).
     const { download } = require('./downloader');
-    await download({
-      url: entry.url, destFile,
-      expectedSize: entry.size || null, retries: 2,
-      onProgress: (received, total) => {
-        event.sender.send('playhub:download-progress', { id: entry.id, received, total });
-      },
-    });
-    const staged = await importer.stageSource(paths, entry.kind === 'zip' ? { kind: 'zip', path: destFile } : { kind: 'html', path: destFile });
+    const staging = path.join(paths.temp, `discover-${Date.now().toString(36)}`);
+    fs.mkdirSync(staging, { recursive: true });
+    const sendProgress = (received, total) => {
+      try { event.sender.send('playhub:download-progress', { id: entry.id, received, total }); } catch { /* window gone */ }
+    };
     try {
-      const report = await importer.analyzeRoot(staged.root, { filenameHint: entry.file || entry.title });
+      let root = staging;
+      if (entry.kind === 'zip') {
+        const destFile = path.join(staging, '__dl', 'game.zip');
+        await download({
+          url: entry.url, destFile, expectedSize: entry.size || null, retries: 2,
+          onProgress: (received, total) => sendProgress(received, total),
+        });
+        root = importer.extractZipSafe(destFile, path.join(staging, 'unzipped'));
+      } else {
+        // Entry file + optional catalog assets, preserving repo-relative
+        // layout so the game's relative references keep working.
+        const files = [{ rel: entry.path || 'game.html', url: entry.url, size: entry.size || null }];
+        for (const a of entry.assets || []) files.push({ rel: a.path, url: a.url, size: a.size || null });
+        let done = 0;
+        const expectedTotal = files.every((f) => f.size) ? files.reduce((s, f) => s + f.size, 0) : null;
+        for (const f of files) {
+          if (!/^https?:\/\//i.test(f.url || '')) throw new Error(`Refusing to download from an unsafe URL for ${f.rel}.`);
+          const parts = importer.assertSafeRelPath(f.rel);
+          const dest = path.join(staging, ...parts);
+          if (!dest.startsWith(staging)) throw new Error(`Unsafe asset path: ${f.rel}`);
+          await download({
+            url: f.url, destFile: dest, expectedSize: f.size, retries: 2,
+            onProgress: (received, total) => sendProgress(done + received, expectedTotal || (total ? done + total : null)),
+          });
+          done += fs.statSync(dest).size;
+        }
+        sendProgress(done, expectedTotal || done);
+      }
+      const report = await importer.analyzeRoot(root, { filenameHint: entry.file || entry.title });
       if (report.errors.length) throw new Error(report.errors.map((e) => e.message).join(' '));
+      if (!report.entry) throw new Error('No playable HTML file found in the download.');
       const gameId = games.uniqueGameId(paths, store, entry.id);
       const record = games.finalizeInstall({
-        paths, store, stagingDir: staged.root, gameId,
+        paths, store, stagingDir: root, gameId,
         manifestOverrides: {
           title: entry.title, description: entry.description || report.description || '',
           author: entry.author || 'Unknown',
-          license: { spdx: entry.license || 'Unknown' },
+          license: { spdx: entry.license || 'Unknown', note: entry.licenseNote || undefined },
           version: entry.version || '1.0',
-          genres: entry.genres || report.genres, tags: entry.tags || [],
+          genres: (entry.genres && entry.genres.length ? entry.genres : report.genres) || [],
+          tags: entry.tags || [],
           sourceCollection: entry.sourceCollection || null,
           qualityTier: entry.qualityTier || null,
           language: report.language,
           entryFile: report.entry.relative, singleFile: report.singleFile,
           controls: { keyboard: report.input.keyboard, mouse: report.input.mouse, touch: report.input.touch, gamepad: report.input.gamepad },
-          network: { required: !report.offlineCapable, hosts: report.externalHosts },
+          network: { required: !report.offlineCapable, hosts: report.externalHosts, trackers: report.trackers || [] },
           source: { repo: entry.repo || null, homepage: entry.homepage || null },
         },
-        thumbnailSrc: report.images.length ? path.join(staged.root, report.images[0]) : null,
+        thumbnailSrc: report.images.length ? path.join(root, report.images[0]) : null,
         origin: 'discover',
       });
+      // Privacy default: games with trackers start sandboxed (user can allow).
+      if (report.trackers && report.trackers.length) {
+        record.blockNetwork = true;
+        store.upsertGame(record);
+      }
       notifyLibraryChanged('install', gameId);
       return record;
     } finally {
-      importer.cleanupStaging(staged.staging);
-      try { fs.rmSync(dlDir, { recursive: true, force: true }); } catch { /* ignore */ }
+      importer.cleanupStaging(staging);
     }
   });
 
@@ -705,14 +680,6 @@ app.whenReady().then(() => {
   require('./game-window').registerGameIpc({ store, paths });
   registerIpc();
 
-  // Seed bundled games (first run installs them; later runs detect updates).
-  try {
-    const seed = seedBundledGames();
-    store.db.meta.lastSeed = new Date().toISOString();
-    if (seed.installed > 0) store.db.meta.firstSeedDone = true;
-  } catch (err) {
-    log.error('seed failed', String(err));
-  }
 
   createMainWindow();
 

@@ -24,8 +24,9 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm test
-      - run: node tools/audit-games.mjs
-      - run: node tools/smoke-seed.mjs
+      - run: node tools/audit-catalog.mjs
+      - run: node tools/audit-catalog.mjs --check-urls
+      - run: node tools/smoke-install.mjs
 
   build-win:
     name: Build Windows app
@@ -38,12 +39,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Fetch bundled games (incl. direct downloads)
-        run: node tools/fetch-games.mjs --fresh
-      - name: Build catalog
-        run: node tools/build-catalog.mjs
-      - name: Audit games
-        run: node tools/audit-games.mjs
+      - name: Audit catalog
+        run: node tools/audit-catalog.mjs
       - name: Build Windows installers
         shell: pwsh
         run: |

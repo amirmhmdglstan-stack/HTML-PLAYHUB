@@ -33,7 +33,6 @@ games/<game-id>/
   "controls": { "keyboard": true, "mouse": true, "touch": false, "gamepad": false, "notes": "" },
   "requirements": { "keyboard": false, "mouse": false, "landscape": false },
   "network": { "required": false, "hosts": [], "trackers": [] },
-  "bundleVersion": 0,
   "addedAt": "2026-09-20T00:00:00.000Z",
   "updatedAt": "2026-09-20T00:00:00.000Z"
 }
@@ -58,17 +57,23 @@ Validation lives in `src/main/manifest.js` (`validateManifest`).
 
 ## Adding games (developers / curators)
 
-1. Add a source to `tools/bundle-sources.json` (`glob` for collections,
-   `files` for one-offs, `extraDownloads` for direct URLs, `external` for
-   link-only entries). **Only list sources you verified as redistributable.**
-2. `node tools/fetch-games.mjs` → regenerates `bundled-games/` + manifests.
-3. `node tools/build-catalog.mjs` → regenerates `catalog/catalog.json`.
-4. `node tools/build-attribution.mjs` → regenerates this list's attribution doc.
-5. `node tools/audit-games.mjs` → must pass with 0 errors.
+Playhub ships no games — the Discover catalog is the library. To add a source:
 
-Game files are stored **verbatim** — never patch game code. If a game needs
-network (CDN), record it in `network.hosts`; the app discloses it and offers
-per-game sandboxing.
+1. Add it to `tools/catalog-sources.json` (`glob` for collections,
+   `files` + `assets` for one-offs and multi-file games, `direct` for
+   single-file sites and zips).
+2. `node tools/build-catalog.mjs` → clones/analyzes, regenerates
+   `catalog/catalog.json` with pinned download URLs. Fails on any invalid
+   entry (missing file, non-HTML, undeclared local assets, duplicate id).
+3. `node tools/build-attribution.mjs` → regenerates the attribution doc.
+4. `node tools/audit-catalog.mjs` → must pass with 0 errors.
+5. `node tools/audit-catalog.mjs --check-urls` → verifies every download link.
+
+The catalog only *links* to original hosts (pinned commit URLs) — game files
+are never copied into this repo. If a game needs network (CDN), the builder
+records it; the app discloses it and offers per-game sandboxing. Games whose
+entries need local files must declare them as `assets` (downloaded together
+with the entry, same layout) or they fail validation.
 
 ## Control layouts
 

@@ -1,0 +1,613 @@
+{
+  "version": 1,
+  "notes": "Discover catalog sources. Repos are cloned by tools/build-catalog.mjs (into .tools-cache/), every HTML game file is analyzed locally, and the catalog stores PINNED direct-download URLs (raw.githubusercontent.com/<sha>/… or the site's own file URL). Nothing is downloaded into this repo; users download on demand from the original hosts.",
+  "licenseNotes": {
+    "Unknown": "No license stated by the author. Playhub downloads it on demand from the original host for your personal use; redistribution rights are unknown — do not re-share the file."
+  },
+  "repos": [
+    {
+      "key": "90s-games",
+      "collection": "90s Games",
+      "repo": "https://github.com/prateek121/90s-games.git",
+      "author": "prateek121",
+      "homepage": "https://github.com/prateek121/90s-games",
+      "license": { "spdx": "MIT" },
+      "mode": "glob",
+      "pattern": "games/*.html",
+      "idPrefix": "90s",
+      "language": "en"
+    },
+    {
+      "key": "mini-browser-games",
+      "collection": "Mini Browser Games",
+      "repo": "https://github.com/wangzifan396-wzf/mini-browser-games.git",
+      "author": "wangzifan396-wzf",
+      "homepage": "https://github.com/wangzifan396-wzf/mini-browser-games",
+      "license": { "spdx": "MIT" },
+      "mode": "glob",
+      "pattern": "*.html",
+      "exclude": ["index.html"],
+      "tiersFile": "GAME_TIERS.json",
+      "excludeTiers": ["E"],
+      "idPrefix": "mini",
+      "language": "zh-CN"
+    },
+    {
+      "key": "voxelcraft",
+      "collection": "Voxelcraft",
+      "repo": "https://github.com/bridge-mind/voxelcraft.git",
+      "author": "bridge-mind",
+      "homepage": "https://github.com/bridge-mind/voxelcraft",
+      "license": { "spdx": "MIT" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "voxelcraft",
+          "src": "index.html",
+          "title": "Voxelcraft",
+          "genres": ["Simulation"],
+          "description": "Minecraft-style voxel sandbox in a single file: procedural worlds, survival, crafting. Loads Three.js from a CDN, so it needs internet."
+        }
+      ]
+    },
+    {
+      "key": "operation-ironhold",
+      "collection": "Operation Ironhold",
+      "repo": "https://github.com/StarKnightt/operation-ironhold.git",
+      "author": "StarKnightt",
+      "homepage": "https://github.com/StarKnightt/operation-ironhold",
+      "license": { "spdx": "MIT" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "operation-ironhold",
+          "src": "index.html",
+          "title": "Operation Ironhold",
+          "genres": ["Action"],
+          "description": "Complete first-person shooter in a single HTML file. Loads Three.js from a CDN, so it needs internet."
+        }
+      ]
+    },
+    {
+      "key": "web-arcade",
+      "collection": "Web Arcade",
+      "repo": "https://github.com/duysqubix/web-arcade.git",
+      "author": "duysqubix",
+      "homepage": "https://github.com/duysqubix/web-arcade",
+      "license": { "spdx": "MIT" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "the-maze",
+          "src": "games/maze/index.html",
+          "title": "The Maze",
+          "genres": ["Horror"],
+          "description": "Procedurally-generated 3D dungeon maze. First-person horror — something else is in there with you. Needs internet (Three.js CDN)."
+        }
+      ]
+    },
+    {
+      "key": "reversi-html",
+      "collection": "Reversi",
+      "repo": "https://github.com/99fk/reversi-html.git",
+      "author": "99fk",
+      "homepage": "https://github.com/99fk/reversi-html",
+      "license": { "spdx": "GPL-3.0-only" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "reversi",
+          "src": "index.html",
+          "title": "Reversi",
+          "genres": ["Strategy"],
+          "description": "Single-file Reversi with AI, undo, hints and sound. GPL-3.0."
+        }
+      ]
+    },
+    {
+      "key": "backgammon-html",
+      "collection": "Backgammon",
+      "repo": "https://github.com/99fk/backgammon-html.git",
+      "author": "99fk",
+      "homepage": "https://github.com/99fk/backgammon-html",
+      "license": { "spdx": "GPL-3.0-only" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "backgammon",
+          "src": "index.html",
+          "title": "Backgammon",
+          "genres": ["Strategy"],
+          "description": "Minimalist Backgammon in a single file. Play against a friend or the built-in AI. GPL-3.0. (The repo's bg-online.html needs a multiplayer server, so it is not listed.)"
+        }
+      ]
+    },
+    {
+      "key": "backdooms",
+      "collection": "The Backdooms",
+      "repo": "https://github.com/Kuberwastaken/backdooms.git",
+      "author": "Kuber Mehta",
+      "homepage": "https://github.com/Kuberwastaken/backdooms",
+      "license": { "spdx": "MIT" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "the-backdooms",
+          "src": "THE-BACKDOOMS.html",
+          "title": "The Backdooms",
+          "genres": ["Horror"],
+          "assets": ["public/Game-Music.mp3", "public/favicon.ico"],
+          "description": "Backrooms + DOOM in the browser. The soundtrack downloads with the game."
+        },
+        { "id": "backdooms-minified", "src": "aggresive-minified-version/MINIFIED-BACKDOOMS.html", "title": "Backdooms (Minified)", "genres": ["Horror"] },
+        { "id": "backdooms-even-smaller-slammer", "src": "legacy-versions/legacy-agressive-minified-versions/EVEN-SMALLER-SLAMMER-BACKROOMS.html", "title": "Backdooms: Even Smaller Slammer (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-smol", "src": "legacy-versions/legacy-agressive-minified-versions/Smol-Aggressive-Minified-Version.HTML", "title": "Backdooms: Smol Version (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v1", "src": "legacy-versions/v1.html", "title": "Backdooms v1 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v2", "src": "legacy-versions/v2.html", "title": "Backdooms v2 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v2-1", "src": "legacy-versions/v2.1.html", "title": "Backdooms v2.1 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v3", "src": "legacy-versions/v3.html", "title": "Backdooms v3 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v3-1", "src": "legacy-versions/v3.1.html", "title": "Backdooms v3.1 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v4", "src": "legacy-versions/v4.html", "title": "Backdooms v4 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v5", "src": "legacy-versions/v5.html", "title": "Backdooms v5 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v5-1", "src": "legacy-versions/v5.1.html", "title": "Backdooms v5.1 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v6", "src": "legacy-versions/v6.html", "title": "Backdooms v6 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v7", "src": "legacy-versions/v7.html", "title": "Backdooms v7 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v8", "src": "legacy-versions/v8.html", "title": "Backdooms v8 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v9", "src": "legacy-versions/v9.html", "title": "Backdooms v9 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v10", "src": "legacy-versions/v10.html", "title": "Backdooms v10 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v10-1", "src": "legacy-versions/v10.1.html", "title": "Backdooms v10.1 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v11", "src": "legacy-versions/v11.html", "title": "Backdooms v11 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v11-1", "src": "legacy-versions/v11.1.html", "title": "Backdooms v11.1 (Legacy)", "genres": ["Horror"] },
+        { "id": "backdooms-v12", "src": "legacy-versions/v12.html", "title": "Backdooms v12 (Legacy)", "genres": ["Horror"] }
+      ]
+    },
+    {
+      "key": "billritz-tetris",
+      "collection": "Tetris",
+      "repo": "https://github.com/billritz/Tetris.git",
+      "author": "billritz",
+      "homepage": "https://github.com/billritz/Tetris",
+      "license": { "spdx": "MIT" },
+      "licenseNote": "The repo README declares MIT (no LICENSE file).",
+      "mode": "files",
+      "pick": [
+        {
+          "id": "tetris-billritz",
+          "src": "index.html",
+          "title": "Tetris",
+          "genres": ["Puzzle"],
+          "description": "Classic block-stacking Tetris in a single file."
+        }
+      ]
+    },
+    {
+      "key": "offline-html-games-pack",
+      "collection": "Offline HTML Games Pack",
+      "repo": "https://github.com/CoolDude2349/Offline-HTML-Games-Pack.git",
+      "author": "CoolDude2349",
+      "homepage": "https://github.com/CoolDude2349/Offline-HTML-Games-Pack",
+      "license": { "spdx": "Unknown" },
+      "mode": "glob",
+      "pattern": "offline/*.html",
+      "idPrefix": "offline",
+      "language": "en"
+    },
+    {
+      "key": "blue-run",
+      "collection": "Blue Run",
+      "repo": "https://github.com/DrTsunamy/Blue-run.git",
+      "author": "DrTsunamy",
+      "homepage": "https://github.com/DrTsunamy/Blue-run",
+      "license": { "spdx": "Unknown" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "blue-run",
+          "src": "index.html",
+          "title": "Blue Run",
+          "genres": ["Platformer"],
+          "description": "Underwater odyssey runner. Needs internet (game engine CDN)."
+        }
+      ]
+    },
+    {
+      "key": "nightdrive",
+      "collection": "Nightdrive",
+      "repo": "https://github.com/StarKnightt/nightdrive.git",
+      "author": "StarKnightt",
+      "homepage": "https://github.com/StarKnightt/nightdrive",
+      "license": { "spdx": "Unknown" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "nightdrive",
+          "src": "index.html",
+          "title": "Nightdrive",
+          "genres": ["Racing"],
+          "description": "Golden-hour endless drive. Only webfonts load remotely — fully playable offline."
+        }
+      ]
+    },
+    {
+      "key": "kmadsdev-doom",
+      "collection": "MicroDOOM",
+      "repo": "https://github.com/kmadsdev/doom.git",
+      "author": "kmadsdev",
+      "homepage": "https://github.com/kmadsdev/doom",
+      "license": { "spdx": "Unknown" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "doom-1993",
+          "src": "start/doom/index.html",
+          "title": "DOOM (1993)",
+          "genres": ["Action"],
+          "description": "The 1993 classic, fully playable offline in a single 6 MB file."
+        },
+        {
+          "id": "microdoom-v1-0",
+          "src": "start/microdoom/v1.0/index.html",
+          "title": "MicroDOOM v1.0",
+          "genres": ["Action"],
+          "description": "Tiny DOOM demake, fully offline."
+        },
+        {
+          "id": "microdoom-v1-1",
+          "src": "start/microdoom/v1.1/index.html",
+          "title": "MicroDOOM v1.1",
+          "genres": ["Action"],
+          "description": "Tiny DOOM demake (latest), fully offline."
+        }
+      ]
+    },
+    {
+      "key": "web-demos",
+      "collection": "Web Demos",
+      "repo": "https://github.com/red-reddington/web-demos.git",
+      "author": "red-reddington",
+      "homepage": "https://github.com/red-reddington/web-demos",
+      "license": { "spdx": "MIT" },
+      "licenseNote": "The repo README declares MIT (no LICENSE file).",
+      "mode": "files",
+      "pick": [
+        {
+          "id": "velvetshuffle-cards",
+          "src": "velvetshuffle-cards/index.html",
+          "title": "VelvetShuffle Cards",
+          "genres": ["Strategy"],
+          "description": "Original card games rendered in Three.js."
+        },
+        {
+          "id": "versant",
+          "src": "versant/index.html",
+          "title": "Versant",
+          "genres": ["Sports"],
+          "assets": ["versant/assets/versant_logo.svg"],
+          "description": "Alpine skiing on procedural terrain with hand-solved kinematics. No authored animations."
+        },
+        {
+          "id": "wheres-walter",
+          "src": "wheres-walter/index.html",
+          "title": "Where's Walter?",
+          "genres": ["Puzzle"],
+          "description": "Find Walter in a Three.js instanced crowd engine."
+        },
+        { "id": "abalone", "src": "abalone/index.html", "title": "Abalone", "genres": ["Strategy"], "description": "Classic 3D hexagonal strategy game in Three.js. Needs internet." },
+        { "id": "deathchase-3d", "src": "deathchase-3d/index.html", "title": "Deathchase 3D", "genres": ["Action"], "description": "Three.js homage to the 1983 ZX Spectrum classic." },
+        {
+          "id": "eternal-ride",
+          "src": "eternal-ride/index.html",
+          "title": "Eternal Ride",
+          "genres": ["Racing"],
+          "assets": ["eternal-ride/assets/sounds/engine_loop.mp3", "eternal-ride/assets/sounds/explosion.mp3", "eternal-ride/assets/sounds/gunshot.mp3", "eternal-ride/assets/sounds/water.mp3", "eternal-ride/assets/textures/water_normal.png"],
+          "description": "Endless rider beyond the horizon. Sounds and textures download with the game."
+        },
+        { "id": "gorillas", "src": "gorillas/index.html", "title": "Gorillas", "genres": ["Strategy"], "description": "Gorillas-style artillery duel." },
+        { "id": "hiss-highness-snake", "src": "hiss-highness-snake/index.html", "title": "Hiss Highness: Snake", "genres": ["Arcade"], "description": "Royal snake with remote art assets. Needs internet." },
+        { "id": "jumping-jack", "src": "jumping-jack/index.html", "title": "Jumping Jack", "genres": ["Platformer"] },
+        { "id": "lines", "src": "lines/index.html", "title": "Lines", "genres": ["Puzzle"], "description": "3D Color Lines (five-in-a-row) in Three.js. Needs internet." },
+        { "id": "neon-gutter", "src": "neon-gutter/index.html", "title": "Neon Gutter", "genres": ["Sports"], "description": "3D pinball. Needs internet." },
+        { "id": "nibbles", "src": "nibbles/index.html", "title": "Nibbles", "genres": ["Arcade"] },
+        { "id": "ravenfall", "src": "ravenfall/index.html", "title": "Ravenfall", "genres": ["Action"], "description": "Dark action demo with remote art assets. Needs internet." },
+        { "id": "snow-brawl", "src": "snow-brawl/index.html", "title": "Snow Brawl", "genres": ["Action"], "description": "Snowball arena brawl." }
+      ]
+    },
+    {
+      "key": "emberhold",
+      "collection": "The Arcade",
+      "repo": "https://github.com/JeffryArevalo/emberhold.git",
+      "author": "Jeffry Arevalo",
+      "homepage": "https://jeffryarevalo.com/games/",
+      "license": { "spdx": "Unknown" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "emberhold",
+          "src": "index.html",
+          "title": "Emberhold",
+          "genres": ["Strategy"],
+          "description": "Survival settlement on a single frozen screen. Feed the Furnace, outlast the Great Frost."
+        }
+      ]
+    },
+    {
+      "key": "sky-hopper",
+      "collection": "The Arcade",
+      "repo": "https://github.com/JeffryArevalo/sky-hopper.git",
+      "author": "Jeffry Arevalo",
+      "homepage": "https://jeffryarevalo.com/games/",
+      "license": { "spdx": "MIT" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "sky-hopper",
+          "src": "index.html",
+          "title": "Sky Hopper",
+          "genres": ["Arcade"],
+          "description": "Polished tap-to-flap arcade. Procedural graphics and generative music, no dependencies."
+        }
+      ]
+    },
+    {
+      "key": "prism-pop",
+      "collection": "The Arcade",
+      "repo": "https://github.com/JeffryArevalo/prism-pop.git",
+      "author": "Jeffry Arevalo",
+      "homepage": "https://jeffryarevalo.com/games/",
+      "license": { "spdx": "Unknown" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "prism-pop",
+          "src": "index.html",
+          "title": "Prism Pop",
+          "genres": ["Puzzle"],
+          "description": "Colorful gem match-3 with combo cascades that climb the musical scale."
+        }
+      ]
+    },
+    {
+      "key": "horde-defense",
+      "collection": "The Arcade",
+      "repo": "https://github.com/JeffryArevalo/horde-defense.git",
+      "author": "Jeffry Arevalo",
+      "homepage": "https://jeffryarevalo.com/games/",
+      "license": { "spdx": "Unknown" },
+      "mode": "files",
+      "pick": [
+        {
+          "id": "last-stand-z",
+          "src": "index.html",
+          "title": "Last Stand Z",
+          "genres": ["Action"],
+          "description": "Mobile zombie lane shooter: steer the squad, it fires on its own. Push your best distance."
+        }
+      ]
+    },
+    {
+      "key": "one-page-games",
+      "collection": "One Page Games",
+      "repo": "https://github.com/magejosh/one-page-games.git",
+      "author": "magejosh",
+      "homepage": "https://github.com/magejosh/one-page-games",
+      "license": { "spdx": "MIT" },
+      "licenseNote": "The repo README declares MIT (no LICENSE file).",
+      "mode": "glob",
+      "pattern": "**/*.html",
+      "excludeDirs": ["cozy_settlement/arxv"],
+      "idPrefix": "opg",
+      "language": "en"
+    },
+    {
+      "key": "yongjin-html-games",
+      "collection": "One HTML Games",
+      "repo": "https://github.com/16Yongjin/html-games.git",
+      "author": "16Yongjin",
+      "homepage": "https://github.com/16Yongjin/html-games",
+      "license": { "spdx": "MIT" },
+      "mode": "glob",
+      "pattern": "*.html",
+      "exclude": ["kanban.html"],
+      "idPrefix": "yj",
+      "language": "en"
+    }
+  ],
+  "direct": [
+    {
+      "id": "markvd-colossal-cable-adventure",
+      "kind": "file",
+      "title": "Colossal Cable Adventure",
+      "url": "https://markvd.net/games/colossal-cable-adventure.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Adventure"],
+      "offline": true,
+      "description": "Text adventure in the sublevels of a cable-maze building. 26 rooms, 10 artifacts, 350 points."
+    },
+    {
+      "id": "markvd-bird-hunt",
+      "kind": "file",
+      "title": "Bird Hunt",
+      "url": "https://markvd.net/games/bird-hunt.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Action"],
+      "offline": true,
+      "description": "Duck-Hunt-style gallery shooter. Five shells a round, escalating birds, zero tact."
+    },
+    {
+      "id": "markvd-sunstrip-turbo",
+      "kind": "file",
+      "title": "Sunstrip Turbo",
+      "url": "https://markvd.net/games/sunstrip-turbo.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Racing"],
+      "offline": true,
+      "description": "OutRun-style countdown racer across 8 courses with chiptunes."
+    },
+    {
+      "id": "markvd-dirtnought",
+      "kind": "file",
+      "title": "Dirtnought",
+      "url": "https://markvd.net/games/dirtnought.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Strategy"],
+      "offline": true,
+      "description": "Turn-based artillery on procedural terrain. Angle, power, wind."
+    },
+    {
+      "id": "markvd-crownstone",
+      "kind": "file",
+      "title": "Crownstone",
+      "url": "https://markvd.net/games/crownstone.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Strategy"],
+      "offline": true,
+      "description": "BBS door game: claim the crown against a randomized rival house. ANSI art, 8-bit sound."
+    },
+    {
+      "id": "markvd-tired-chicken",
+      "kind": "file",
+      "title": "Tired Chicken",
+      "url": "https://markvd.net/games/tired-chicken.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Arcade"],
+      "offline": true,
+      "description": "Tap-to-flap arcade in Windows 95 clothing. Procedural obstacles."
+    },
+    {
+      "id": "markvd-casino-cards",
+      "kind": "file",
+      "title": "Casino Cards",
+      "url": "https://markvd.net/games/casino-cards.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Strategy"],
+      "offline": true,
+      "description": "Twenty-two real-rules card games in one page: Klondike, Blackjack, Hearts, Poker and more."
+    },
+    {
+      "id": "markvd-wheel-and-dice",
+      "kind": "file",
+      "title": "Wheel & Dice Casino",
+      "url": "https://markvd.net/games/wheel-and-dice.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Strategy"],
+      "offline": true,
+      "description": "26 wheel & dice games with verified odds: Roulette, Craps, Backgammon and more."
+    },
+    {
+      "id": "markvd-square-table",
+      "kind": "file",
+      "title": "Square Table",
+      "url": "https://markvd.net/games/square-table.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Strategy"],
+      "offline": true,
+      "description": "Checkers (8 variants) and Chess (7 variants) with 5 AI levels. Solo or pass-the-mouse."
+    },
+    {
+      "id": "markvd-slot-parlor",
+      "kind": "file",
+      "title": "Slot Parlor",
+      "url": "https://markvd.net/games/slot-parlor.html",
+      "author": "Mark (MARKVD-NET)",
+      "license": { "spdx": "MIT" },
+      "collection": "MARKVD Games",
+      "homepage": "https://markvd.net/games/",
+      "genres": ["Arcade"],
+      "offline": true,
+      "description": "Sixteen video slot machines built to Illinois terminal rules. Play money only."
+    },
+    {
+      "id": "localgames-chronosphire",
+      "kind": "file",
+      "title": "Chronosphire",
+      "url": "https://localgames.fun/play/bd6dd99a-72fa-4c2a-bf53-45aa5dbc4035",
+      "author": "@monkeh",
+      "license": { "spdx": "Unknown" },
+      "collection": "Local Games",
+      "homepage": "https://localgames.fun/u/monkeh/chronosphire",
+      "genres": ["Action"],
+      "offline": null,
+      "description": "Time-bending roguelite: time moves only when you do. 8 vessels, 5 floors. Community upload."
+    },
+    {
+      "id": "localgames-voide-runner",
+      "kind": "file",
+      "title": "Voide Runner",
+      "url": "https://localgames.fun/play/a0203dc4-3fdf-4a1e-a974-4d6b0bc28b51",
+      "author": "@analogalok",
+      "license": { "spdx": "Unknown" },
+      "collection": "Local Games",
+      "homepage": "https://localgames.fun/u/analogalok/voide-runner-sonnet-5",
+      "genres": ["Action"],
+      "offline": null,
+      "description": "Endless space shooter with new weapons, coins and a Jupiter-like backdrop. Community upload."
+    },
+    {
+      "id": "localgames-flappy-soccer",
+      "kind": "file",
+      "title": "Flappy Soccer",
+      "url": "https://localgames.fun/play/165082d8-4b18-4a45-9cc5-ebb533d8e01e",
+      "author": "@analogalok",
+      "license": { "spdx": "Unknown" },
+      "collection": "Local Games",
+      "homepage": "https://localgames.fun/u/analogalok/flappy-soccer",
+      "genres": ["Arcade"],
+      "offline": null,
+      "description": "Flappy-style goal-kicking: pass the ball through the center of the net. Community upload."
+    },
+    {
+      "id": "localgames-void-runner",
+      "kind": "file",
+      "title": "Void Runner",
+      "url": "https://localgames.fun/play/05559186-e80b-45eb-adb2-9a0e011f67c0",
+      "author": "@analogalok",
+      "license": { "spdx": "Unknown" },
+      "collection": "Local Games",
+      "homepage": "https://localgames.fun/u/analogalok/void-runner",
+      "genres": ["Action"],
+      "offline": null,
+      "description": "Deep-space combat: escalating waves, weapons, hull integrity. Community upload."
+    },
+    {
+      "id": "eaglercraftx-1-8",
+      "kind": "zip",
+      "title": "EagleCraftX 1.8 (Offline)",
+      "url": "https://cdn.eaglercraft.ru/dl/1.8.8/EaglercraftX_1.8_u53_Offline_Signed.zip",
+      "author": "Eaglercraft (lax1dude)",
+      "license": { "spdx": "Unknown" },
+      "licenseNote": "Third-party Minecraft-compatible browser client, downloaded from a community mirror (cdn.eaglercraft.ru). Not affiliated with Mojang. Single-player works offline; multiplayer needs a server address.",
+      "collection": "EagleCraft",
+      "homepage": "https://eaglercraft.com/",
+      "genres": ["Simulation"],
+      "offline": true,
+      "description": "Minecraft-compatible client for the browser. Single-player works offline; multiplayer needs a server."
+    }
+  ]
+}

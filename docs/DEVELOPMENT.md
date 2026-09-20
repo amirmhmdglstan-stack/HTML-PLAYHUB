@@ -20,26 +20,25 @@ keeps everything in `./data/` instead of `%APPDATA%`.
 
 | Command | What it does |
 |---|---|
-| `npm test` | 34 unit/integration tests (`node --test`) |
-| `node tools/smoke-seed.mjs` | headless E2E: seed 235 games, integrity, backup→uninstall→restore |
-| `node tools/audit-games.mjs` | quality gate: manifests, licenses, doctor pass, catalog schema |
-| `node tools/fetch-games.mjs [--fresh]` | regenerate `bundled-games/` from `tools/bundle-sources.json` |
-| `node tools/build-catalog.mjs` | regenerate `catalog/catalog.json` |
+| `npm test` | 38 unit/integration tests (`node --test`) |
+| `node tools/smoke-install.mjs` | headless E2E: file/assets/zip installs, integrity, backup→uninstall→restore |
+| `node tools/audit-catalog.mjs [--check-urls]` | catalog quality gate (+ download-link liveness with the flag) |
+| `node tools/build-catalog.mjs [--fresh]` | regenerate `catalog/catalog.json` from `tools/catalog-sources.json` (clones into `.tools-cache/`) |
+
 | `node tools/build-attribution.mjs` | regenerate `docs/GAMES_ATTRIBUTION.md` |
 | `node tools/make-icon.mjs` | regenerate `assets/icon.png` + `assets/icon.ico` |
 | `npm run pack` | electron-builder `--dir` (unpacked, for inspection) |
 | `npm run dist` | Windows: NSIS setup + portable + zip into `release/` |
 
-Order matters when curating games: **fetch → catalog → attribution → audit**.
+Order matters when curating games: **catalog → attribution → audit → audit --check-urls**.
 
 ## CI / releases (GitHub Actions)
 
 `.github/workflows/build.yml`:
 
-- `test` (Linux, every push): `npm ci`, `npm test`, audit, smoke seed.
-- `build-win` (Windows; on `main`, tags, manual dispatch): full game fetch
-  (includes direct downloads unavailable in restricted sandboxes), catalog,
-  audit, `electron-builder --win`, SHA-256 checksums, artifact upload.
+- `test` (Linux, every push): `npm ci`, `npm test`, audit, URL-liveness check, smoke install.
+- `build-win` (Windows; every push, tags, manual dispatch): audit,
+  `electron-builder --win` (NSIS + portable + zip), SHA-256 checksums, artifact upload.
 - `release` (on tags `v*`): attaches `.exe`/`.zip`/`checksums.txt` to a GitHub
   Release with generated notes.
 
@@ -62,4 +61,4 @@ gh run watch <id> && gh run download <id>
 - Tests: colocated by area in `tests/test-*.js`, hermetic (tmp dirs, localhost
   HTTP only).
 - Never commit `data/`, `.tools-cache/`, `release/`, or `node_modules/`.
-- `bundled-games/` is generated but **committed** (it is the shipped library).
+- `catalog/catalog.json` is generated but **committed** (it is the shipped Discover catalog).

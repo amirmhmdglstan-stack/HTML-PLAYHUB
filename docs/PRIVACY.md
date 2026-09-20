@@ -26,7 +26,7 @@ Some games load libraries (e.g. Three.js) or analytics from CDNs. Playhub:
 1. Detects this statically (Game Doctor → “External hosts”),
 2. Badges online games in the library (`Online` vs `Offline`),
 3. Offers a per-game **Offline Sandbox** that blocks all game network requests
-   (auto-enabled for bundled games containing trackers, suggested during import).
+   (auto-enabled for installed games containing trackers, suggested during import).
 
 External links inside games open in your OS browser, never silently.
 

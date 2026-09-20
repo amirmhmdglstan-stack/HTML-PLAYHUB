@@ -17,14 +17,13 @@ function tempPaths() {
     backups: path.join(root, 'backups'),
     cache: path.join(root, 'cache'),
     temp: path.join(root, 'temp'),
-    downloads: path.join(root, 'downloads'),
     logs: path.join(root, 'logs'),
     dbFile: path.join(root, 'playhub.json'),
     settingsFile: path.join(root, 'settings.json'),
     layoutsFile: path.join(root, 'control-layouts.json'),
     catalogCache: path.join(root, 'cache', 'catalog.json'),
   };
-  for (const d of [p.games, p.thumbnails, p.screenshots, p.backups, p.cache, p.temp, p.downloads, p.logs]) {
+  for (const d of [p.games, p.thumbnails, p.screenshots, p.backups, p.cache, p.temp, p.logs]) {
     fs.mkdirSync(d, { recursive: true });
   }
   return p;

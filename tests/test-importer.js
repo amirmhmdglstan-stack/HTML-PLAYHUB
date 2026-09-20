@@ -18,12 +18,11 @@ function tempPaths() {
     games: path.join(root, 'games'),
     thumbnails: path.join(root, 'thumbnails'),
     temp: path.join(root, 'temp'),
-    downloads: path.join(root, 'downloads'),
     dbFile: path.join(root, 'playhub.json'),
     settingsFile: path.join(root, 'settings.json'),
     layoutsFile: path.join(root, 'control-layouts.json'),
   };
-  for (const d of [p.games, p.thumbnails, p.temp, p.downloads]) fs.mkdirSync(d, { recursive: true });
+  for (const d of [p.games, p.thumbnails, p.temp]) fs.mkdirSync(d, { recursive: true });
   return p;
 }
 
@@ -132,6 +131,42 @@ describe('importer', () => {
     const r = games.integrityCheck({ paths, store });
     assert.equal(r.ok, false);
     assert.ok(r.issues.some((i) => i.code === 'missing-entry'));
+    fs.rmSync(paths.root, { recursive: true, force: true });
+  });
+});
+
+describe('catalog asset staging', () => {
+  it('stages entry + assets preserving repo-relative layout', async () => {
+    const paths = tempPaths();
+    const src = path.join(paths.root, 'dl');
+    fs.mkdirSync(path.join(src, 'sub'), { recursive: true });
+    fs.writeFileSync(path.join(src, 'sub', 'entry.html'), GAME.replace('</body>', '<img src="art.png"></body>'));
+    fs.writeFileSync(path.join(src, 'sub', 'art.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
+    const staged = importer.stageFileTree(paths, [
+      { rel: 'sub/entry.html', src: path.join(src, 'sub', 'entry.html') },
+      { rel: 'sub/art.png', src: path.join(src, 'sub', 'art.png') },
+    ]);
+    try {
+      assert.ok(fs.existsSync(path.join(staged.root, 'sub', 'entry.html')));
+      assert.ok(fs.existsSync(path.join(staged.root, 'sub', 'art.png')));
+      const report = await importer.analyzeRoot(staged.root, { filenameHint: 'entry.html' });
+      assert.equal(report.entry.relative, path.join('sub', 'entry.html'));
+      assert.equal(report.singleFile, false);
+    } finally {
+      importer.cleanupStaging(staged.staging);
+    }
+    fs.rmSync(paths.root, { recursive: true, force: true });
+  });
+
+  it('rejects unsafe asset paths', () => {
+    const paths = tempPaths();
+    const f = path.join(paths.root, 'x.html');
+    fs.writeFileSync(f, GAME);
+    for (const rel of ['../evil.html', 'a/../../evil.html', '/abs.html', 'C:/win.html', 'a\\b.html', '', 'a//b.html']) {
+      assert.throws(() => importer.assertSafeRelPath(rel), /Invalid|Unsafe/, rel || '(empty)');
+    }
+    assert.throws(() => importer.stageFileTree(paths, [{ rel: '../evil.html', src: f }]), /Unsafe/);
+    assert.ok(!fs.existsSync(path.join(paths.temp, '..', 'evil.html')));
     fs.rmSync(paths.root, { recursive: true, force: true });
   });
 });
