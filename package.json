@@ -57,10 +57,10 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "HTML Playhub",
-      "artifactName": "${productName}-${version}-Setup.${ext}"
+      "artifactName": "HTML-Playhub-${version}-Setup.${ext}"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-Portable.${ext}"
+      "artifactName": "HTML-Playhub-${version}-Portable.${ext}"
     }
   }
 }
