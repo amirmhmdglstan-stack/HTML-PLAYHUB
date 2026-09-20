@@ -50,7 +50,7 @@ jobs:
           node --version
           npx electron-builder --version
           $ErrorActionPreference = 'Continue'
-          npx electron-builder --win 2>&1 | Tee-Object -FilePath build.log
+          npx electron-builder --win --publish never 2>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -ne 0) {
             Write-Output '--- build.log tail (also emitted as error annotation) ---'
             Get-Content build.log -Tail 15
