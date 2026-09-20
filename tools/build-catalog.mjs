@@ -39,12 +39,17 @@ for (const src of config.sources) {
 
 const games = [];
 const seen = new Set();
+const bundledIds = new Set(bundle.games.map((e) => e.id));
+// extraDownloads that also got bundled (CI has network): reinstall via origin URL.
+const extraUrlById = {};
+for (const dl of config.extraDownloads) extraUrlById[dl.id] = dl.url;
 
 // 1. bundled games
 for (const entry of bundle.games) {
   const manifest = JSON.parse(fs.readFileSync(path.join(OUT, entry.dir, 'playhub.manifest.json'), 'utf8'));
   const entryStat = fs.statSync(path.join(OUT, entry.dir, manifest.entryFile));
-  const url = rawUrl(manifest.source.repo, manifest.source.path, repoHeadByUrl[manifest.source.repo]);
+  const url = rawUrl(manifest.source.repo, manifest.source.path, repoHeadByUrl[manifest.source.repo])
+    || extraUrlById[manifest.id] || null;
   seen.add(manifest.id);
   games.push({
     id: manifest.id,
@@ -118,5 +123,6 @@ fs.writeFileSync(path.join(CATALOG_DIR, 'catalog.json'), JSON.stringify({
   games,
 }, null, 2));
 
-console.log(`catalog: ${games.length} entries (${bundle.games.length} bundled-installable, ${config.extraDownloads.length} direct, ${config.external.length} external)`);
+const directCount = config.extraDownloads.filter((d) => !bundledIds.has(d.id)).length;
+console.log(`catalog: ${games.length} entries (${bundle.games.length} bundled-installable, ${directCount} direct, ${config.external.length} external)`);
 for (const s of sources) console.log(`  ${s.collection}: ${s.count} (${s.license})`);
